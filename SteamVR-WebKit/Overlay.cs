@@ -16,6 +16,7 @@ namespace SteamVR_WebKit
         float _width;
 
         bool _ingame = false;
+        uint eventSize = (uint)System.Runtime.InteropServices.Marshal.SizeOf(typeof(VREvent_t));
 
         public String Key
         {
@@ -101,6 +102,16 @@ namespace SteamVR_WebKit
 
             SteamVR_WebKit.OverlayManager.SetOverlayAlpha(_handle, 1.0f);
             SteamVR_WebKit.OverlayManager.SetOverlayColor(_handle, 1.0f, 1.0f, 1.0f);
+
+            // Because it'll be upside down otherwise.
+            VRTextureBounds_t bounds;
+            bounds.vMax = 0; bounds.vMin = 1;  // Flip the Y
+
+            // Leave as defaults
+            bounds.uMin = 0;
+            bounds.uMax = 1;
+
+            SteamVR_WebKit.OverlayManager.SetOverlayTextureBounds(_handle, ref bounds);
         }
 
         public void SetThumbnail(string filePath)
@@ -134,6 +145,11 @@ namespace SteamVR_WebKit
         public bool IsVisible()
         {
             return SteamVR_WebKit.OverlayManager.IsOverlayVisible(_handle);
+        }
+
+        public bool PollEvent(ref VREvent_t ovrEvent)
+        {
+            return SteamVR_WebKit.OverlayManager.PollNextOverlayEvent(_handle, ref ovrEvent, eventSize);
         }
     }
 }
