@@ -68,10 +68,13 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AttachmentType.cs" />
     <Compile Include="openvr_api.cs" />
     <Compile Include="Overlay.cs" />
+    <Compile Include="OverlayType.cs" />
     <Compile Include="SteamVR.cs" />
     <Compile Include="SteamVR_WebKit.cs" />
+    <Compile Include="TransformUtils.cs" />
     <Compile Include="WebKitOverlay.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Valve.VR;
 using OpenTK.Graphics.OpenGL;
 using System.Threading;
+using System.Diagnostics;
 
 namespace SteamVR_WebKit
 {
@@ -17,10 +18,16 @@ namespace SteamVR_WebKit
         static CVRSystem _system;
         static CVRCompositor _compositor;
         static CVROverlay _overlay;
+        static int _frameSleep;
+        static int _fps;
 
         public static List<WebKitOverlay> Overlays;
 
-        public static int FPS = 16;
+        public static int FPS
+        {
+            get { return _fps; }
+            set { _frameSleep = (int)((1f / (float)value) * 1000); _fps = value; }
+        }
 
         public static SteamVR SteamVR
         {
@@ -101,15 +108,17 @@ namespace SteamVR_WebKit
 
         public static void RunOverlays()
         {
+            Stopwatch fpsWatch = new Stopwatch();
             while (true)
             {
+                fpsWatch.Restart();
                 foreach (WebKitOverlay overlay in Overlays)
                 {
                     overlay.Update();
                     overlay.Draw();
                 }
-
-                Thread.Sleep(FPS);
+                fpsWatch.Stop();
+                Thread.Sleep(fpsWatch.ElapsedMilliseconds >= _frameSleep ? 0 : (int)(_frameSleep - fpsWatch.ElapsedMilliseconds));
             }
         }
     }

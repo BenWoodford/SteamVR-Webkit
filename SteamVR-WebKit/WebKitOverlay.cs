@@ -16,7 +16,8 @@ namespace SteamVR_WebKit
     public class WebKitOverlay
     {
         Uri _uri;
-        Overlay _overlay;
+        Overlay _dashboardOverlay;
+        Overlay _inGameOverlay;
         int _glTextureId = 0;
         Texture_t _textureData;
         string _cachePath;
@@ -28,6 +29,12 @@ namespace SteamVR_WebKit
         bool _wasVisible = false;
         VREvent_t ovrEvent;
         BrowserSettings _browserSettings;
+        bool _renderInGameOverlay;
+
+        string _overlayKey;
+        string _overlayName;
+
+        bool _isHolding = false;
 
         public event EventHandler BrowserPreInit;
         public event EventHandler BrowserReady;
@@ -39,9 +46,14 @@ namespace SteamVR_WebKit
             get { return _uri; }
         }
 
-        public Overlay Overlay
+        public Overlay DashboardOverlay
         {
-            get { return _overlay; }
+            get { return _dashboardOverlay; }
+        }
+
+        public Overlay InGameOverlay
+        {
+            get { return _inGameOverlay; }
         }
 
         public bool IsRendering
@@ -60,6 +72,22 @@ namespace SteamVR_WebKit
             set { _browserSettings = value; }
         }
 
+        public bool RenderInGameOverlay
+        {
+            get { return _renderInGameOverlay; }
+            set
+            {
+                _renderInGameOverlay = value;
+                if (InGameOverlay != null)
+                {
+                    if (_renderInGameOverlay)
+                        InGameOverlay.Show();
+                    else
+                        InGameOverlay.Hide();
+                }
+            }
+        }
+
         public ChromiumWebBrowser Browser
         {
             get { return _browser; }
@@ -68,17 +96,33 @@ namespace SteamVR_WebKit
         public string CachePath { get { return _cachePath; } set { _cachePath = value; } }
         public double ZoomLevel { get { return _zoomLevel; } set { _zoomLevel = value; } }
 
-        public WebKitOverlay(Uri uri, int windowWidth, int windowHeight, string overlayKey, string overlayName, float overlayWidth = 2f, bool isInGameOverlay = false)
+        [Obsolete("Please use the newer constructor that lets you define whether to show in dashboard, in-game or both instead.")]
+        public WebKitOverlay(Uri uri, int windowWidth, int windowHeight, string overlayKey, string overlayName, float overlayWidth = 2f, bool isInGameOverlay = false) : this(uri, windowWidth, windowHeight, overlayKey, overlayName, isInGameOverlay ? OverlayType.InGame : OverlayType.Dashboard)
+        {
+
+        }
+
+        public WebKitOverlay(Uri uri, int windowWidth, int windowHeight, string overlayKey, string overlayName, OverlayType overlayType)
         {
             _browserSettings = new BrowserSettings();
-            _browserSettings.WindowlessFrameRate = 60;
+            _browserSettings.WindowlessFrameRate = 30;
             _uri = uri;
             _windowWidth = windowWidth;
             _windowHeight = windowHeight;
-            _overlay = new Overlay(overlayKey, overlayName, overlayWidth, isInGameOverlay);
+            _overlayKey = overlayKey;
+            _overlayName = overlayName;
+
+            if (overlayType == OverlayType.Dashboard)
+                CreateDashboardOverlay();
+            else if (overlayType == OverlayType.InGame)
+                CreateInGameOverlay();
+            else
+            {
+                CreateDashboardOverlay();
+                CreateInGameOverlay();
+            }
 
             SteamVR_WebKit.Overlays.Add(this);
-            SteamVR_WebKit.OverlayManager.ShowDashboard(overlayKey);
 
             SetupTextures();
         }
@@ -86,6 +130,31 @@ namespace SteamVR_WebKit
         public void ToggleAudio()
         {
             throw new NotImplementedException("I'll find the option to change the audio in CEF eventually.");
+        }
+
+        public void CreateDashboardOverlay()
+        {
+            _dashboardOverlay = new Overlay("dashboard." + _overlayKey, _overlayName, 2.0f, false);
+            _dashboardOverlay.SetTextureSize(_windowWidth, _windowHeight);
+            //_dashboardOverlay.Show();
+        }
+
+        public void CreateInGameOverlay()
+        {
+            _inGameOverlay = new Overlay("ingame." + _overlayKey, _overlayName, 2.0f, true);
+            _inGameOverlay.Show();
+        }
+
+        public void DestroyInGameOverlay()
+        {
+            _inGameOverlay.Destroy();
+            _inGameOverlay = null;
+        }
+
+        public void DestroyDashboardOverlay()
+        {
+            _dashboardOverlay.Destroy();
+            _dashboardOverlay = null;
         }
 
         public void StartBrowser()
@@ -185,10 +254,9 @@ namespace SteamVR_WebKit
 
             lock(_browser.BitmapLock) {
                 // Eugh. I hate this, but it'll do till I can work out how to flip it more efficiently.
-                Bitmap copyBitmap = new Bitmap(_browser.Bitmap);
 
-                BitmapData bmpData = copyBitmap.LockBits(
-                    new Rectangle(0, 0, copyBitmap.Width, copyBitmap.Height),
+                BitmapData bmpData = _browser.Bitmap.LockBits(
+                    new Rectangle(0, 0, _browser.Bitmap.Width, _browser.Bitmap.Height),
                     ImageLockMode.ReadOnly,
                     System.Drawing.Imaging.PixelFormat.Format32bppArgb
                     );
@@ -197,35 +265,10 @@ namespace SteamVR_WebKit
                 GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, _browser.Bitmap.Width, _browser.Bitmap.Height, 0, OpenTK.Graphics.OpenGL.PixelFormat.Bgra, PixelType.UnsignedByte, bmpData.Scan0);
                 GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
                 GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
-                //_browser.Bitmap.UnlockBits(bmpData);
-                copyBitmap.UnlockBits(bmpData);
+                _browser.Bitmap.UnlockBits(bmpData);
+                //copyBitmap.UnlockBits(bmpData);
 
                 GL.BindTexture(TextureTarget.Texture2D, 0);
-            }
-        }
-
-        public virtual void Update()
-        {
-            if (!_isRendering)
-                return;
-
-            if (!Overlay.IsVisible())
-            {
-                if (_wasVisible)
-                {
-                    _wasVisible = false;
-                    HandleMouseLeaveEvent();
-                }
-                return;
-            }
-
-            _wasVisible = true;
-
-            // We'll handle mouse events here eventually.
-
-            while(Overlay.PollEvent(ref ovrEvent))
-            {
-                HandleEvent();
             }
         }
 
@@ -265,17 +308,28 @@ namespace SteamVR_WebKit
 
         void HandleMouseMoveEvent(VREvent_t ev)
         {
-            _browser.GetBrowser().GetHost().SendMouseMoveEvent((int)(_windowWidth * ev.data.mouse.x), (int)(_windowHeight * ev.data.mouse.y), false, CefEventFlags.None);
+            //_browser.GetBrowser().GetHost().SendMouseMoveEvent((int)(_windowWidth * ev.data.mouse.x), (int)(_windowHeight * (1f - ev.data.mouse.y)), false, CefEventFlags.None);
+            _browser.GetBrowser().GetHost().SendMouseMoveEvent((int)ev.data.mouse.x, _windowHeight - (int)ev.data.mouse.y, false, CefEventFlags.None);
         }
 
         void HandleMouseButtonDownEvent(VREvent_t ev)
         {
-            _browser.GetBrowser().GetHost().SendMouseClickEvent((int)(_windowWidth * ev.data.mouse.x), (int)(_windowHeight * ev.data.mouse.y), GetMouseButtonType(ev.data.mouse.button), false, 1, CefEventFlags.None);
+            _browser.GetBrowser().GetHost().SendMouseClickEvent((int)ev.data.mouse.x, _windowHeight - (int)ev.data.mouse.y, GetMouseButtonType(ev.data.mouse.button), false, 1, CefEventFlags.None);
+
+            if((EVRMouseButton)ev.data.mouse.button == EVRMouseButton.Left)
+            {
+                _isHolding = true;
+            }
         }
 
         void HandleMouseButtonUpEvent(VREvent_t ev)
         {
-            _browser.GetBrowser().GetHost().SendMouseClickEvent((int)(_windowWidth * ev.data.mouse.x), (int)(_windowHeight * ev.data.mouse.y), GetMouseButtonType(ev.data.mouse.button), true, 1, CefEventFlags.None);
+            _browser.GetBrowser().GetHost().SendMouseClickEvent((int)ev.data.mouse.x, _windowHeight - (int)ev.data.mouse.y, GetMouseButtonType(ev.data.mouse.button), true, 1, CefEventFlags.None);
+
+            if ((EVRMouseButton)ev.data.mouse.button == EVRMouseButton.Left)
+            {
+                _isHolding = false;
+            }
         }
 
         void HandleMouseLeaveEvent()
@@ -283,14 +337,65 @@ namespace SteamVR_WebKit
             _browser.GetBrowser().GetHost().SendMouseMoveEvent(0, 0, true, CefEventFlags.None);
         }
 
+        bool CanDoUpdates()
+        {
+            if (DashboardOverlay == null && InGameOverlay == null)
+                return false; // We can go no further.
+
+            if (DashboardOverlay != null && DashboardOverlay.IsVisible())
+                return true;
+
+            if (InGameOverlay != null && InGameOverlay.IsVisible())
+                return true;
+
+            return false;
+        }
+
+        public virtual void Update()
+        {
+            if (!_isRendering)
+                return;
+
+            // Mouse inputs are for dashboards only right now.
+
+            if (!DashboardOverlay.IsVisible())
+            {
+                if (_wasVisible)
+                {
+                    _wasVisible = false;
+                    HandleMouseLeaveEvent();
+                }
+                return;
+            }
+
+            _wasVisible = true;
+
+            // We'll handle mouse events here eventually.
+
+            while (DashboardOverlay.PollEvent(ref ovrEvent))
+            {
+                HandleEvent();
+            }
+        }
+
         public virtual void Draw()
         {
-            if (!Overlay.IsVisible())
+            if (!CanDoUpdates())
                 return;
 
             UpdateTexture();
-            Overlay.SetTexture(ref _textureData);
-            Overlay.Show();
+
+            if (DashboardOverlay != null && DashboardOverlay.IsVisible())
+            {
+                DashboardOverlay.SetTexture(ref _textureData);
+                DashboardOverlay.Show();
+            }
+
+            if(InGameOverlay != null && InGameOverlay.IsVisible())
+            {
+                InGameOverlay.SetTexture(ref _textureData);
+                InGameOverlay.Show();
+            }
         }
     }
 }
