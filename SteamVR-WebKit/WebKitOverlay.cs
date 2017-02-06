@@ -36,6 +36,13 @@ namespace SteamVR_WebKit
         string _overlayKey;
         string _overlayName;
 
+        bool _allowScrolling = true;
+
+        public bool AllowScrolling
+        {
+            get { return _allowScrolling; } set { _allowScrolling = value; }
+        }
+
         bool _isHolding = false;
 
         public event EventHandler BrowserPreInit;
@@ -291,7 +298,8 @@ namespace SteamVR_WebKit
                     break;
                     
                 case EVREventType.VREvent_Scroll:
-                    HandleMouseScrollEvent(ovrEvent);
+                    if(_allowScrolling)
+                        HandleMouseScrollEvent(ovrEvent);
                     break;
             }
         }
