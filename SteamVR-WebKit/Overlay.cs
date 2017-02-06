@@ -179,6 +179,8 @@ namespace SteamVR_WebKit
             {
                 ovrErr = SteamVR_WebKit.OverlayManager.CreateDashboardOverlay(Key, Name, ref _handle, ref _thumbnailHandle);
                 SteamVR_WebKit.OverlayManager.SetOverlayInputMethod(_handle, VROverlayInputMethod.Mouse);
+                SteamVR_WebKit.OverlayManager.SetOverlayFlag(_handle, VROverlayFlags.ShowTouchPadScrollWheel, true);
+                SteamVR_WebKit.OverlayManager.SetOverlayFlag(_handle, VROverlayFlags.SendVRScrollEvents, true);
             }
 
             Console.WriteLine("Overlay Handle " + _handle + ", Thumbnail Handle: " + _thumbnailHandle);
