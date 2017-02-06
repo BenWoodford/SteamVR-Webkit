@@ -369,7 +369,7 @@ namespace SteamVR_WebKit
 
             // Mouse inputs are for dashboards only right now.
 
-            if (!DashboardOverlay.IsVisible())
+            if (DashboardOverlay != null && !DashboardOverlay.IsVisible())
             {
                 if (_wasVisible)
                 {
@@ -383,9 +383,12 @@ namespace SteamVR_WebKit
 
             // We'll handle mouse events here eventually.
 
-            while (DashboardOverlay.PollEvent(ref ovrEvent))
+            if (DashboardOverlay != null)
             {
-                HandleEvent();
+                while (DashboardOverlay.PollEvent(ref ovrEvent))
+                {
+                    HandleEvent();
+                }
             }
         }
 
