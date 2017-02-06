@@ -36,7 +36,6 @@ namespace SteamVR_WebKit_Test
             videoOverlay.DashboardOverlay.Width = 2.0f;
             videoOverlay.StartBrowser();
 
-
             SteamVR_WebKit.SteamVR_WebKit.RunOverlays(); // Runs update/draw calls for all active overlays. And yes, it's blocking.
         }
 
