@@ -1,2 +1,3 @@
 language: csharp
 solution: SteamVR-WebKit.sln
+script: xbuild /property:Configuration=Release /property:Platform=x64 SteamVR-WebKit.sln
