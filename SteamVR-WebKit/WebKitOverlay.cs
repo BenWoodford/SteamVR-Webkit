@@ -15,6 +15,8 @@ namespace SteamVR_WebKit
 {
     public class WebKitOverlay
     {
+        public const int SCROLL_AMOUNT_PER_SWIPE = 1500;
+
         Uri _uri;
         Overlay _dashboardOverlay;
         Overlay _inGameOverlay;
@@ -287,6 +289,10 @@ namespace SteamVR_WebKit
                 case EVREventType.VREvent_MouseButtonUp:
                     HandleMouseButtonUpEvent(ovrEvent);
                     break;
+                    
+                case EVREventType.VREvent_Scroll:
+                    HandleMouseScrollEvent(ovrEvent);
+                    break;
             }
         }
 
@@ -335,6 +341,11 @@ namespace SteamVR_WebKit
         void HandleMouseLeaveEvent()
         {
             _browser.GetBrowser().GetHost().SendMouseMoveEvent(0, 0, true, CefEventFlags.None);
+        }
+        
+        void HandleMouseScrollEvent(VREvent_t ev)
+        {
+            _browser.GetBrowser().GetHost().SendMouseWheelEvent(0, 0, (int)(ev.data.scroll.xdelta * SCROLL_AMOUNT_PER_SWIPE), (int)(ev.data.scroll.ydelta * SCROLL_AMOUNT_PER_SWIPE), CefEventFlags.None);
         }
 
         bool CanDoUpdates()
