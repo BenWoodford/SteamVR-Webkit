@@ -323,7 +323,7 @@ namespace SteamVR_WebKit
         void HandleMouseMoveEvent(VREvent_t ev)
         {
             //_browser.GetBrowser().GetHost().SendMouseMoveEvent((int)(_windowWidth * ev.data.mouse.x), (int)(_windowHeight * (1f - ev.data.mouse.y)), false, CefEventFlags.None);
-            _browser.GetBrowser().GetHost().SendMouseMoveEvent((int)ev.data.mouse.x, _windowHeight - (int)ev.data.mouse.y, false, CefEventFlags.None);
+            _browser.GetBrowser().GetHost().SendMouseMoveEvent((int)ev.data.mouse.x, _windowHeight - (int)ev.data.mouse.y, false, _isHolding ? CefEventFlags.LeftMouseButton : CefEventFlags.None);
         }
 
         void HandleMouseButtonDownEvent(VREvent_t ev)
