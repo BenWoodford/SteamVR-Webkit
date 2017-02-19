@@ -1,0 +1,69 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <style type="text/css">
+        body, html {
+            background: black;
+            color: white;
+        }
+
+        h1,h2,h3 {
+            color: white;
+        }
+    </style>
+
+    <style type="text/css">
+        ::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+
+        ::-webkit-scrollbar-button {
+            width: 0px;
+            height: 0px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #ffffff;
+            border: 0px none #ffffff;
+            border-radius: 50px;
+        }
+
+            ::-webkit-scrollbar-thumb:hover {
+                background: #ffffff;
+            }
+
+            ::-webkit-scrollbar-thumb:active {
+                background: #ffffff;
+            }
+
+        ::-webkit-scrollbar-track {
+            background: #363636;
+            border: 0px none #ffffff;
+            border-radius: 50px;
+        }
+
+            ::-webkit-scrollbar-track:hover {
+                background: #363636;
+            }
+
+            ::-webkit-scrollbar-track:active {
+                background: #333333;
+            }
+
+        ::-webkit-scrollbar-corner {
+            background: transparent;
+        }
+    </style>
+</head>
+<body ng-app="angularTests" ng-controller="ApplicationsController as controller">
+
+    <div ng-repeat="application in controller.applications track by $index">
+        <h3>{{ ::application.Name }}</h3>
+        <img ng-src="{{::application.ImagePath}}" alt="No Image Found" />
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.6.1/angular.js"></script>
+    <script src="angular-tests.js"></script>
+</body>
+</html>

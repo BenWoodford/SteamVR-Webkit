@@ -113,6 +113,9 @@ namespace SteamVR_WebKit
 
         public WebKitOverlay(Uri uri, int windowWidth, int windowHeight, string overlayKey, string overlayName, OverlayType overlayType)
         {
+            if (!SteamVR_WebKit.Initialised)
+                SteamVR_WebKit.Init();
+
             _browserSettings = new BrowserSettings();
             _browserSettings.WindowlessFrameRate = 30;
             _uri = uri;
@@ -262,8 +265,6 @@ namespace SteamVR_WebKit
                 return;
 
             lock(_browser.BitmapLock) {
-                // Eugh. I hate this, but it'll do till I can work out how to flip it more efficiently.
-
                 BitmapData bmpData = _browser.Bitmap.LockBits(
                     new Rectangle(0, 0, _browser.Bitmap.Width, _browser.Bitmap.Height),
                     ImageLockMode.ReadOnly,
@@ -328,6 +329,9 @@ namespace SteamVR_WebKit
 
         void HandleMouseButtonDownEvent(VREvent_t ev)
         {
+            if (ev.data.mouse.button != (uint)EVRMouseButton.Left)
+                return;
+
             _browser.GetBrowser().GetHost().SendMouseClickEvent((int)ev.data.mouse.x, _windowHeight - (int)ev.data.mouse.y, GetMouseButtonType(ev.data.mouse.button), false, 1, CefEventFlags.None);
 
             if((EVRMouseButton)ev.data.mouse.button == EVRMouseButton.Left)
@@ -338,6 +342,9 @@ namespace SteamVR_WebKit
 
         void HandleMouseButtonUpEvent(VREvent_t ev)
         {
+            if (ev.data.mouse.button != (uint)EVRMouseButton.Left)
+                return;
+
             _browser.GetBrowser().GetHost().SendMouseClickEvent((int)ev.data.mouse.x, _windowHeight - (int)ev.data.mouse.y, GetMouseButtonType(ev.data.mouse.button), true, 1, CefEventFlags.None);
 
             if ((EVRMouseButton)ev.data.mouse.button == EVRMouseButton.Left)

@@ -21,6 +21,10 @@ namespace SteamVR_WebKit
         static int _frameSleep;
         static int _fps;
 
+        static bool _initialised = false;
+
+        public static bool Initialised { get { return _initialised; } }
+
         public static List<WebKitOverlay> Overlays;
 
         public static int FPS
@@ -72,6 +76,8 @@ namespace SteamVR_WebKit
             _overlay = OpenVR.Overlay;
 
             Console.WriteLine("SteamVR_WebKit Initialised");
+
+            _initialised = true;
 
         }
 
