@@ -92,7 +92,7 @@ namespace SteamVR_WebKit_Test
 
             basicOverlay.Browser.ConsoleMessage += Browser_ConsoleMessage;
             basicOverlay.Browser.RegisterJsObject("testObject", new JsCallbackTest());
-            basicOverlay.Browser.RegisterJsObject("notifications", new SteamVR_WebKit.JsInterop.Notifications(basicOverlay.DashboardOverlay.Handle));
+            basicOverlay.Browser.RegisterJsObject("notifications", new SteamVR_WebKit.JsInterop.Notifications(basicOverlay.DashboardOverlay));
         }
     }
 }

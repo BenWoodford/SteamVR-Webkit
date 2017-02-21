@@ -22,13 +22,13 @@ namespace SteamVR_WebKit.JsInterop
             public Bitmap Bitmap;
             public int glTextureId;
         }
-        
-        private ulong _handle = 0;
+
+        private Overlay _overlay;
         private static Dictionary<string, NotificationIcon> _icons = new Dictionary<string, NotificationIcon>();
 
-        public Notifications(ulong overlayHandle)
+        public Notifications(Overlay overlay)
         {
-            _handle = overlayHandle;
+            _overlay = overlay;
         }
 
         public bool SendNotification(string text, string bitmapKey = null, int displayForMs = 2000)
@@ -47,7 +47,7 @@ namespace SteamVR_WebKit.JsInterop
 
             uint notId = 0;
             EVRNotificationError err = EVRNotificationError.OK;
-            err = OpenVR.Notifications.CreateNotification(_handle, 0, EVRNotificationType.Transient, text, EVRNotificationStyle.Application, ref bmp, ref notId);
+            err = OpenVR.Notifications.CreateNotification(_overlay.Handle, 0, EVRNotificationType.Transient, text, EVRNotificationStyle.Application, ref bmp, ref notId);
             
             if(err != EVRNotificationError.OK)
             {
