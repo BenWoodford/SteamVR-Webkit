@@ -22,48 +22,39 @@ namespace SteamVR_WebKit.JsInterop
             public Bitmap Bitmap;
             public int glTextureId;
         }
-
-        private CVRNotifications _notificationsInstance;
-        private Overlay _overlay;
+        
+        private ulong _handle = 0;
         private static Dictionary<string, NotificationIcon> _icons = new Dictionary<string, NotificationIcon>();
 
-        public Notifications(Overlay overlay)
+        public Notifications(ulong overlayHandle)
         {
-            _overlay = overlay;
-            _notificationsInstance = OpenVR.Notifications;
+            _handle = overlayHandle;
         }
 
-        public bool SendNotification(string text, string bitmapKey = "default", int displayForMs = 2000)
+        public bool SendNotification(string text, string bitmapKey = null, int displayForMs = 2000)
         {
-            if (!_icons.ContainsKey(bitmapKey))
-                throw new Exception("Invalid Bitmap Key");
+            NotificationBitmap_t bmp = new NotificationBitmap_t();
+            if (bitmapKey != null)
+            {
+                if (!_icons.ContainsKey(bitmapKey))
+                    throw new Exception("Invalid Bitmap Key");
 
-            NotificationBitmap_t bmp;
-            bmp.m_nBytesPerPixel = 4;
-            bmp.m_nHeight = _icons[bitmapKey].Bitmap.Height;
-            bmp.m_nWidth = _icons[bitmapKey].Bitmap.Width;
-            bmp.m_pImageData = (IntPtr)(_icons[bitmapKey].glTextureId);
+                bmp.m_nBytesPerPixel = 4;
+                bmp.m_nHeight = _icons[bitmapKey].Bitmap.Height;
+                bmp.m_nWidth = _icons[bitmapKey].Bitmap.Width;
+                bmp.m_pImageData = (IntPtr)(_icons[bitmapKey].glTextureId);
+            }
 
             uint notId = 0;
             EVRNotificationError err = EVRNotificationError.OK;
-
-            err = _notificationsInstance.CreateNotification(_overlay.Handle, 0, EVRNotificationType.Transient, text, EVRNotificationStyle.Application, ref bmp, ref notId);
-
-            if(err == EVRNotificationError.OK)
-            {
-                Timer notTimer = new Timer();
-                notTimer.Interval = displayForMs;
-                notTimer.Elapsed += (s, e) =>
-                {
-                    _notificationsInstance.RemoveNotification(notId);
-                    notTimer.Stop();
-                };
-                return true;
-            } else
+            err = OpenVR.Notifications.CreateNotification(_handle, 0, EVRNotificationType.Transient, text, EVRNotificationStyle.Application, ref bmp, ref notId);
+            
+            if(err != EVRNotificationError.OK)
             {
                 Console.WriteLine("Notification Failure: " + err.ToString());
                 return false;
             }
+            return true;
         }
 
         public static void RegisterIcon(string key, Bitmap bitmap)
