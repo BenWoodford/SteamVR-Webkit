@@ -73,11 +73,6 @@ namespace SteamVR_WebKit_Test
         private static void VideoOverlay_BrowserPreInit(object sender, EventArgs e)
         {
             videoOverlay.Browser.RegisterJsObject("overlay", videoOverlay);
-
-            /* Doesn't work yet, need more info on how notifications work in OpenVR.
-            JsNotifications jsNotifications = new JsNotifications(videoOverlay.DashboardOverlay);
-            videoOverlay.Browser.RegisterJsObject("notifications", jsNotifications);
-            */
         }
 
         private static void Overlay_BrowserReady(object sender, EventArgs e)
@@ -97,6 +92,7 @@ namespace SteamVR_WebKit_Test
 
             basicOverlay.Browser.ConsoleMessage += Browser_ConsoleMessage;
             basicOverlay.Browser.RegisterJsObject("testObject", new JsCallbackTest());
+            basicOverlay.Browser.RegisterJsObject("notifications", new SteamVR_WebKit.JsInterop.Notifications(basicOverlay.DashboardOverlay));
         }
     }
 }
