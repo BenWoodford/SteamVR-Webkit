@@ -33,6 +33,8 @@ namespace SteamVR_WebKit
         BrowserSettings _browserSettings;
         bool _renderInGameOverlay;
 
+        bool _browserDidUpdate;
+
         string _overlayKey;
         string _overlayName;
 
@@ -251,6 +253,8 @@ namespace SteamVR_WebKit
             if (browser.Bitmap != null)
                 _isRendering = true;
 
+            _browserDidUpdate = true;
+
             BrowserRenderUpdate?.Invoke(sender, e);
         }
 
@@ -267,10 +271,15 @@ namespace SteamVR_WebKit
 
         public virtual void UpdateTexture()
         {
+            if (!_browserDidUpdate)
+                return;
+
+            _browserDidUpdate = false;
+
             if (_browser.Bitmap == null)
                 return;
 
-            lock(_browser.BitmapLock) {
+            lock (_browser.BitmapLock) {
                 BitmapData bmpData = _browser.Bitmap.LockBits(
                     new Rectangle(0, 0, _browser.Bitmap.Width, _browser.Bitmap.Height),
                     ImageLockMode.ReadOnly,
