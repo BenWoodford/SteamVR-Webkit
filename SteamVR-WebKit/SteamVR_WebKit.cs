@@ -20,12 +20,18 @@ namespace SteamVR_WebKit
         static CVROverlay _overlay;
         static int _frameSleep;
         static int _fps;
+        static bool _doStop = false;
 
         static bool _initialised = false;
 
         public static bool Initialised { get { return _initialised; } }
 
         public static List<WebKitOverlay> Overlays;
+
+        public static void Stop()
+        {
+            _doStop = true;
+        }
 
         public static int FPS
         {
@@ -115,7 +121,7 @@ namespace SteamVR_WebKit
         public static void RunOverlays()
         {
             Stopwatch fpsWatch = new Stopwatch();
-            while (true)
+            while (!_doStop)
             {
                 fpsWatch.Restart();
                 foreach (WebKitOverlay overlay in Overlays)
