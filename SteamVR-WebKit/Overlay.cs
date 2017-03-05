@@ -15,6 +15,7 @@ namespace SteamVR_WebKit
         ulong _handle = 0;
         ulong _thumbnailHandle = 0;
         float _width;
+        float _alpha;
 
         AttachmentType _attachmentType = AttachmentType.Absolute;
         Vector3 _position = Vector3.Zero;
@@ -49,10 +50,42 @@ namespace SteamVR_WebKit
             set { _width = value;  UpdateWidth(); }
         }
 
+        public float Alpha
+        {
+            get { return _alpha; }
+            set { _alpha = value; UpdateAlpha(); }
+        }
+
         public int WidthInCm
         {
             get { return (int)(_width * 100f); }
             set { _width = (float)value / 100; UpdateWidth(); }
+        }
+        
+        /// <summary>
+        /// Create object for an existing overlay by overlay key. Useful to gain access to the stock overlays.
+        /// </summary>
+        /// <param name="pchOverlayKey"></param>
+        public Overlay(string pchOverlayKey)
+        {
+            EVROverlayError ovrErr = EVROverlayError.None;
+
+            ovrErr = SteamVR_WebKit.OverlayManager.FindOverlay(pchOverlayKey, ref _handle);
+
+            if (ovrErr != EVROverlayError.None)
+            {
+                throw new Exception("Failed to create overlay: " + ovrErr.ToString());
+            }
+
+            _key = pchOverlayKey;
+
+            StringBuilder sb = new StringBuilder();
+            SteamVR_WebKit.OverlayManager.GetOverlayName(_handle, new StringBuilder(), 1000, ref ovrErr);
+            _name = sb.ToString();
+
+            SteamVR_WebKit.OverlayManager.GetOverlayWidthInMeters(_handle, ref _width);
+
+            SteamVR_WebKit.OverlayManager.GetOverlayAlpha(_handle, ref _alpha);
         }
 
         public Overlay(string key, string name, float width = 2.0f, bool isInGameOverlay = false)
@@ -63,6 +96,7 @@ namespace SteamVR_WebKit
 
             CreateOverlayInSteamVR();
             Width = width;
+            Alpha = 1.0f;
 
             AppDomain.CurrentDomain.ProcessExit += CurrentDomain_ProcessExit;
         }
@@ -221,6 +255,11 @@ namespace SteamVR_WebKit
         void UpdateWidth()
         {
             SteamVR_WebKit.OverlayManager.SetOverlayWidthInMeters(_handle, _width);
+        }
+
+        void UpdateAlpha()
+        {
+            SteamVR_WebKit.OverlayManager.SetOverlayAlpha(_handle, _alpha);
         }
 
         public void SetTexture(ref Texture_t texture)
