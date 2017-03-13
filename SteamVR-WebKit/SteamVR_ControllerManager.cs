@@ -15,8 +15,8 @@ namespace Valve.VR
         public SteamVR_Controller right = new SteamVR_Controller("right");
         public SteamVR_Controller[] objects; // populate with objects you want to assign to additional controllers
 
-        uint[] indices; // assigned
-        bool[] connected = new bool[OpenVR.k_unMaxTrackedDeviceCount]; // controllers only
+        public uint[] indices; // assigned
+        public bool[] connected = new bool[OpenVR.k_unMaxTrackedDeviceCount]; // controllers only
 
         // cached roles - may or may not be connected
         uint leftIndex = OpenVR.k_unTrackedDeviceIndexInvalid;
@@ -176,7 +176,7 @@ namespace Valve.VR
                 Refresh();
         }
 
-        public void Refresh()
+        private void Refresh()
         {
             int objectIndex = 0;
 

@@ -131,10 +131,10 @@ namespace SteamVR_WebKit
                 throw new Exception("Failed to init Overlay!");
             }
 
-            SteamVR_Event.Listen("initializing", OnInitializing);
-            SteamVR_Event.Listen("calibrating", OnCalibrating);
-            SteamVR_Event.Listen("out_of_range", OnOutOfRange);
-            SteamVR_Event.Listen("device_connected", OnDeviceConnected);
+            //SteamVR_Event.Listen("initializing", OnInitializing);
+            //SteamVR_Event.Listen("calibrating", OnCalibrating);
+            //SteamVR_Event.Listen("out_of_range", OnOutOfRange);
+            //SteamVR_Event.Listen("device_connected", OnDeviceConnected);
             SteamVR_Event.Listen("new_poses", OnNewPoses);
         }
         
@@ -157,7 +157,6 @@ namespace SteamVR_WebKit
                 fpsWatch.Restart();
 
                 UpdatePoses();
-                ControllerManager.Refresh();
 
                 foreach (WebKitOverlay overlay in Overlays)
                 {
@@ -168,36 +167,8 @@ namespace SteamVR_WebKit
                 Thread.Sleep(fpsWatch.ElapsedMilliseconds >= _frameSleep ? 0 : (int)(_frameSleep - fpsWatch.ElapsedMilliseconds));
             }
         }
-
-
-
+        
         #region Event callbacks
-        static public bool initializing { get; private set; }
-        static public bool calibrating { get; private set; }
-        static public bool outOfRange { get; private set; }
-        static public bool[] connected = new bool[OpenVR.k_unMaxTrackedDeviceCount];
-
-        private static void OnInitializing(params object[] args)
-        {
-            initializing = (bool)args[0];
-        }
-
-        private static void OnCalibrating(params object[] args)
-        {
-            calibrating = (bool)args[0];
-        }
-
-        private static void OnOutOfRange(params object[] args)
-        {
-            outOfRange = (bool)args[0];
-        }
-
-        private static void OnDeviceConnected(params object[] args)
-        {
-            var i = (int)args[0];
-            connected[i] = (bool)args[1];
-        }
-
         private static void OnNewPoses(params object[] args)
         {
             var poses = (TrackedDevicePose_t[])args[0];
@@ -205,7 +176,7 @@ namespace SteamVR_WebKit
             for (int i = 0; i < poses.Length; i++)
             {
                 var connected = poses[i].bDeviceIsConnected;
-                if (connected != SteamVR.connected[i])
+                if (connected != ControllerManager.connected[i])
                 {
                     SteamVR_Event.Send("device_connected", i, connected);
                 }
@@ -239,7 +210,5 @@ namespace SteamVR_WebKit
             }
         }
         #endregion
-
-
     }
 }
