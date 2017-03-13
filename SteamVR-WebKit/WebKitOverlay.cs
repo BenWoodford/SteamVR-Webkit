@@ -33,6 +33,8 @@ namespace SteamVR_WebKit
         BrowserSettings _browserSettings;
         bool _renderInGameOverlay;
 
+        bool _browserDidUpdate;
+
         string _overlayKey;
         string _overlayName;
 
@@ -49,6 +51,12 @@ namespace SteamVR_WebKit
         public event EventHandler BrowserReady;
         public event EventHandler BrowserRenderUpdate;
         public event EventHandler PageReady;
+
+        public event EventHandler PreUpdateCallback;
+        public event EventHandler PostUpdateCallback;
+
+        public event EventHandler PreDrawCallback;
+        public event EventHandler PostDrawCallback;
 
         public Uri Uri
         {
@@ -255,6 +263,8 @@ namespace SteamVR_WebKit
             if (browser.Bitmap != null)
                 _isRendering = true;
 
+            _browserDidUpdate = true;
+
             BrowserRenderUpdate?.Invoke(sender, e);
         }
 
@@ -271,10 +281,15 @@ namespace SteamVR_WebKit
 
         public virtual void UpdateTexture()
         {
+            if (!_browserDidUpdate)
+                return;
+
+            _browserDidUpdate = false;
+
             if (_browser.Bitmap == null)
                 return;
 
-            lock(_browser.BitmapLock) {
+            lock (_browser.BitmapLock) {
                 BitmapData bmpData = _browser.Bitmap.LockBits(
                     new Rectangle(0, 0, _browser.Bitmap.Width, _browser.Bitmap.Height),
                     ImageLockMode.ReadOnly,
@@ -396,6 +411,8 @@ namespace SteamVR_WebKit
             if (!_isRendering)
                 return;
 
+            PreUpdateCallback?.Invoke(this, new EventArgs());
+
             // Mouse inputs are for dashboards only right now.
 
             if (DashboardOverlay != null && !DashboardOverlay.IsVisible())
@@ -419,12 +436,16 @@ namespace SteamVR_WebKit
                     HandleEvent();
                 }
             }
+
+            PostUpdateCallback?.Invoke(this, new EventArgs());
         }
 
         public virtual void Draw()
         {
             if (!CanDoUpdates())
                 return;
+
+            PreDrawCallback?.Invoke(this, new EventArgs());
 
             UpdateTexture();
 
@@ -439,6 +460,8 @@ namespace SteamVR_WebKit
                 InGameOverlay.SetTexture(ref _textureData);
                 InGameOverlay.Show();
             }
+
+            PostDrawCallback?.Invoke(this, new EventArgs());
         }
     }
 }
