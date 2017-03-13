@@ -122,10 +122,7 @@ public class SteamVR : System.IDisposable
     public float sceneHeight { get; private set; }
     public float aspect { get; private set; }
     public float fieldOfView { get; private set; }
-    //public Vector2 tanHalfFov { get; private set; }
     public VRTextureBounds_t[] textureBounds { get; private set; }
-    //public SteamVR_Utils.RigidTransform[] eyes { get; private set; }
-    //public EG graphicsAPI;
 
     // hmd properties
     public string hmd_TrackingSystemName { get { return GetStringProperty(ETrackedDeviceProperty.Prop_TrackingSystemName_String); } }
@@ -168,7 +165,6 @@ public class SteamVR : System.IDisposable
     }
 
     #region Event callbacks
-
     private void OnInitializing(params object[] args)
     {
         initializing = (bool)args[0];
@@ -194,16 +190,12 @@ public class SteamVR : System.IDisposable
     {
         var poses = (TrackedDevicePose_t[])args[0];
 
-        // Update eye offsets to account for IPD changes.
-        // eyes[0] = new SteamVR_Utils.RigidTransform(hmd.GetEyeToHeadTransform(EVREye.Eye_Left));
-        //eyes[1] = new SteamVR_Utils.RigidTransform(hmd.GetEyeToHeadTransform(EVREye.Eye_Right));
-
         for (int i = 0; i < poses.Length; i++)
         {
             var connected = poses[i].bDeviceIsConnected;
             if (connected != SteamVR.connected[i])
             {
-                // SteamVR_Utils.Event.Send("device_connected", i, connected);
+                SteamVR_Event.Send("device_connected", i, connected);
             }
         }
 
@@ -214,7 +206,7 @@ public class SteamVR : System.IDisposable
             var initializing = result == ETrackingResult.Uninitialized;
             if (initializing != SteamVR.initializing)
             {
-                //SteamVR_Utils.Event.Send("initializing", initializing);
+                SteamVR_Event.Send("initializing", initializing);
             }
 
             var calibrating =
@@ -222,7 +214,7 @@ public class SteamVR : System.IDisposable
                 result == ETrackingResult.Calibrating_OutOfRange;
             if (calibrating != SteamVR.calibrating)
             {
-                //SteamVR_Utils.Event.Send("calibrating", calibrating);
+                SteamVR_Event.Send("calibrating", calibrating);
             }
 
             var outOfRange =
@@ -230,11 +222,10 @@ public class SteamVR : System.IDisposable
                 result == ETrackingResult.Calibrating_OutOfRange;
             if (outOfRange != SteamVR.outOfRange)
             {
-                // SteamVR_Utils.Event.Send("out_of_range", outOfRange);
+                SteamVR_Event.Send("out_of_range", outOfRange);
             }
         }
     }
-
     #endregion
 
     private SteamVR()
@@ -256,49 +247,12 @@ public class SteamVR : System.IDisposable
 
         float r_left = 0.0f, r_right = 0.0f, r_top = 0.0f, r_bottom = 0.0f;
         hmd.GetProjectionRaw(EVREye.Eye_Right, ref r_left, ref r_right, ref r_top, ref r_bottom);
-        /*
-    tanHalfFov = new Vector2(
-        Mathf.Max(-l_left, l_right, -r_left, r_right),
-        Mathf.Max(-l_top, l_bottom, -r_top, r_bottom));
 
-    textureBounds = new VRTextureBounds_t[2];
-
-    textureBounds[0].uMin = 0.5f + 0.5f * l_left / tanHalfFov.x;
-    textureBounds[0].uMax = 0.5f + 0.5f * l_right / tanHalfFov.x;
-    textureBounds[0].vMin = 0.5f - 0.5f * l_bottom / tanHalfFov.y;
-    textureBounds[0].vMax = 0.5f - 0.5f * l_top / tanHalfFov.y;
-
-    textureBounds[1].uMin = 0.5f + 0.5f * r_left / tanHalfFov.x;
-    textureBounds[1].uMax = 0.5f + 0.5f * r_right / tanHalfFov.x;
-    textureBounds[1].vMin = 0.5f - 0.5f * r_bottom / tanHalfFov.y;
-    textureBounds[1].vMax = 0.5f - 0.5f * r_top / tanHalfFov.y;
-
-
-#if (UNITY_5_3 || UNITY_5_2 || UNITY_5_1 || UNITY_5_0)
-    SteamVR.Unity.SetSubmitParams(textureBounds[0], textureBounds[1], EVRSubmitFlags.Submit_Default);
-#endif
-    // Grow the recommended size to account for the overlapping fov
-    sceneWidth = sceneWidth / Mathf.Max(textureBounds[0].uMax - textureBounds[0].uMin, textureBounds[1].uMax - textureBounds[1].uMin);
-    sceneHeight = sceneHeight / Mathf.Max(textureBounds[0].vMax - textureBounds[0].vMin, textureBounds[1].vMax - textureBounds[1].vMin);
-
-    aspect = tanHalfFov.x / tanHalfFov.y;
-    fieldOfView = 2.0f * Mathf.Atan(tanHalfFov.y) * Mathf.Rad2Deg;
-
-    eyes = new SteamVR_Utils.RigidTransform[] {
-        new SteamVR_Utils.RigidTransform(hmd.GetEyeToHeadTransform(EVREye.Eye_Left)),
-        new SteamVR_Utils.RigidTransform(hmd.GetEyeToHeadTransform(EVREye.Eye_Right)) };
-
-    if (SystemInfo.graphicsDeviceVersion.StartsWith("OpenGL"))
-        graphicsAPI = EGraphicsAPIConvention.API_OpenGL;
-    else
-        graphicsAPI = EGraphicsAPIConvention.API_DirectX;
-
-    SteamVR_Utils.Event.Listen("initializing", OnInitializing);
-    SteamVR_Utils.Event.Listen("calibrating", OnCalibrating);
-    SteamVR_Utils.Event.Listen("out_of_range", OnOutOfRange);
-    SteamVR_Utils.Event.Listen("device_connected", OnDeviceConnected);
-    SteamVR_Utils.Event.Listen("new_poses", OnNewPoses);
-    */
+        SteamVR_Event.Listen("initializing", OnInitializing);
+        SteamVR_Event.Listen("calibrating", OnCalibrating);
+        SteamVR_Event.Listen("out_of_range", OnOutOfRange);
+        SteamVR_Event.Listen("device_connected", OnDeviceConnected);
+        SteamVR_Event.Listen("new_poses", OnNewPoses);
     }
 
     ~SteamVR()
@@ -314,11 +268,11 @@ public class SteamVR : System.IDisposable
 
     private void Dispose(bool disposing)
     {
-        // SteamVR_Utils.Event.Remove("initializing", OnInitializing);
-        //SteamVR_Utils.Event.Remove("calibrating", OnCalibrating);
-        //  SteamVR_Utils.Event.Remove("out_of_range", OnOutOfRange);
-        //  SteamVR_Utils.Event.Remove("device_connected", OnDeviceConnected);
-        //  SteamVR_Utils.Event.Remove("new_poses", OnNewPoses);
+        SteamVR_Event.Remove("initializing", OnInitializing);
+        SteamVR_Event.Remove("calibrating", OnCalibrating);
+        SteamVR_Event.Remove("out_of_range", OnOutOfRange);
+        SteamVR_Event.Remove("device_connected", OnDeviceConnected);
+        SteamVR_Event.Remove("new_poses", OnNewPoses);
 
         ShutdownSystems();
         _instance = null;
@@ -326,9 +280,7 @@ public class SteamVR : System.IDisposable
 
     private static void ShutdownSystems()
     {
-#if (UNITY_5_3 || UNITY_5_2 || UNITY_5_1 || UNITY_5_0)
 		OpenVR.Shutdown();
-#endif
     }
 
     // Use this interface to avoid accidentally creating the instance in the process of attempting to dispose of it.
@@ -337,29 +289,5 @@ public class SteamVR : System.IDisposable
         if (_instance != null)
             _instance.Dispose();
     }
-
-#if (UNITY_5_3 || UNITY_5_2 || UNITY_5_1 || UNITY_5_0)
-	// Unityhooks in openvr_api.
-	public class Unity
-	{
-		public const int k_nRenderEventID_WaitGetPoses = 201510020;
-		public const int k_nRenderEventID_SubmitL = 201510021;
-		public const int k_nRenderEventID_SubmitR = 201510022;
-		public const int k_nRenderEventID_Flush = 201510023;
-		public const int k_nRenderEventID_PostPresentHandoff = 201510024;
-
-		[DllImport("openvr_api", EntryPoint = "UnityHooks_GetRenderEventFunc")]
-		public static extern System.IntPtr GetRenderEventFunc();
-
-		[DllImport("openvr_api", EntryPoint = "UnityHooks_SetSubmitParams")]
-		public static extern void SetSubmitParams(VRTextureBounds_t boundsL, VRTextureBounds_t boundsR, EVRSubmitFlags nSubmitFlags);
-
-		[DllImport("openvr_api", EntryPoint = "UnityHooks_SetColorSpace")]
-		public static extern void SetColorSpace(EColorSpace eColorSpace);
-
-		[DllImport("openvr_api", EntryPoint = "UnityHooks_EventWriteString")]
-		public static extern void EventWriteString([In, MarshalAs(UnmanagedType.LPWStr)] string sEvent);
-	}
-#endif
 }
 

@@ -169,9 +169,19 @@ namespace SteamVR_WebKit
             _dashboardOverlay = null;
         }
 
-        public void StartBrowser()
+        public void StartBrowser(bool waitForAttachment=false)
         {
-            AsyncBrowser();
+            //Allow the overlay to let us know when the controller showed up and we were able to attach to it
+            if (waitForAttachment)
+            {
+                //Its possible that it happened before we got here if the controller was present at start
+                if (_inGameOverlay.AttachmentSuccess)
+                    AsyncBrowser();
+                else
+                    _inGameOverlay.OnAttachmentSuccess += AsyncBrowser;
+            }
+            else
+                AsyncBrowser();
         }
 
         protected virtual async void AsyncBrowser()
@@ -367,6 +377,10 @@ namespace SteamVR_WebKit
         {
             if (DashboardOverlay == null && InGameOverlay == null)
                 return false; // We can go no further.
+
+            //This prevents Draw() from failing on get of bitmap when attachment is delayed for controllers
+            if (InGameOverlay != null && !InGameOverlay.AttachmentSuccess)
+                return false;
 
             if (DashboardOverlay != null && DashboardOverlay.IsVisible())
                 return true;

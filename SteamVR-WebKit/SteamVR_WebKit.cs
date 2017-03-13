@@ -2,9 +2,6 @@
 using OpenTK;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Valve.VR;
 using OpenTK.Graphics.OpenGL;
 using System.Threading;
@@ -15,6 +12,7 @@ namespace SteamVR_WebKit
     public class SteamVR_WebKit
     {
         static SteamVR _vr;
+        static SteamVR_ControllerManager _controllerManager;
         static CVRSystem _system;
         static CVRCompositor _compositor;
         static CVROverlay _overlay;
@@ -37,6 +35,12 @@ namespace SteamVR_WebKit
         {
             get { return _vr; }
             set { _vr = value; }
+        }
+
+        public static SteamVR_ControllerManager ControllerManager
+        {
+            get { return _controllerManager; }
+            set { _controllerManager = value; }
         }
 
         public static CVRSystem OVRSystem
@@ -75,6 +79,9 @@ namespace SteamVR_WebKit
             _compositor = OpenVR.Compositor;
             _overlay = OpenVR.Overlay;
 
+            SteamVR = SteamVR.instance;
+            _controllerManager = new SteamVR_ControllerManager();
+
             Console.WriteLine("SteamVR_WebKit Initialised");
 
             _initialised = true;
@@ -112,12 +119,27 @@ namespace SteamVR_WebKit
             }
         }
 
+        private static readonly TrackedDevicePose_t[] _poses = new TrackedDevicePose_t[OpenVR.k_unMaxTrackedDeviceCount];
+        private static readonly TrackedDevicePose_t[] _gamePoses = new TrackedDevicePose_t[0];
+
+        private static void UpdatePoses()
+        {
+            if (_compositor == null) return;
+            _compositor.GetLastPoses(_poses, _gamePoses);
+            SteamVR_Event.Send("new_poses", _poses);
+            SteamVR_Event.Send("new_poses_applied");
+        }
+
         public static void RunOverlays()
         {
             Stopwatch fpsWatch = new Stopwatch();
             while (true)
             {
                 fpsWatch.Restart();
+
+                UpdatePoses();
+                ControllerManager.Refresh();
+
                 foreach (WebKitOverlay overlay in Overlays)
                 {
                     overlay.Update();
