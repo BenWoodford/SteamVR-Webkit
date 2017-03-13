@@ -16,6 +16,7 @@ namespace SteamVR_WebKit
         static CVRSystem _system;
         static CVRCompositor _compositor;
         static CVROverlay _overlay;
+        static CVRApplications _applications;
         static int _frameSleep;
         static int _fps;
         static bool _doStop = false;
@@ -64,6 +65,11 @@ namespace SteamVR_WebKit
             get { return _overlay; }
         }
 
+        public static CVRApplications Applications
+        {
+            get { return _applications; }
+        }
+
         public static GameWindow gw;
 
         public static void Init(CefSettings settings = null)
@@ -84,8 +90,9 @@ namespace SteamVR_WebKit
             _system = OpenVR.System;
             _compositor = OpenVR.Compositor;
             _overlay = OpenVR.Overlay;
+            _applications = OpenVR.Applications;
 
-            SteamVR = SteamVR.instance;
+            //SteamVR = SteamVR.instance;
             _controllerManager = new SteamVR_ControllerManager();
 
             Console.WriteLine("SteamVR_WebKit Initialised");
@@ -123,8 +130,14 @@ namespace SteamVR_WebKit
             {
                 throw new Exception("Failed to init Overlay!");
             }
-        }
 
+            SteamVR_Event.Listen("initializing", OnInitializing);
+            SteamVR_Event.Listen("calibrating", OnCalibrating);
+            SteamVR_Event.Listen("out_of_range", OnOutOfRange);
+            SteamVR_Event.Listen("device_connected", OnDeviceConnected);
+            SteamVR_Event.Listen("new_poses", OnNewPoses);
+        }
+        
         private static readonly TrackedDevicePose_t[] _poses = new TrackedDevicePose_t[OpenVR.k_unMaxTrackedDeviceCount];
         private static readonly TrackedDevicePose_t[] _gamePoses = new TrackedDevicePose_t[0];
 
@@ -155,5 +168,78 @@ namespace SteamVR_WebKit
                 Thread.Sleep(fpsWatch.ElapsedMilliseconds >= _frameSleep ? 0 : (int)(_frameSleep - fpsWatch.ElapsedMilliseconds));
             }
         }
+
+
+
+        #region Event callbacks
+        static public bool initializing { get; private set; }
+        static public bool calibrating { get; private set; }
+        static public bool outOfRange { get; private set; }
+        static public bool[] connected = new bool[OpenVR.k_unMaxTrackedDeviceCount];
+
+        private static void OnInitializing(params object[] args)
+        {
+            initializing = (bool)args[0];
+        }
+
+        private static void OnCalibrating(params object[] args)
+        {
+            calibrating = (bool)args[0];
+        }
+
+        private static void OnOutOfRange(params object[] args)
+        {
+            outOfRange = (bool)args[0];
+        }
+
+        private static void OnDeviceConnected(params object[] args)
+        {
+            var i = (int)args[0];
+            connected[i] = (bool)args[1];
+        }
+
+        private static void OnNewPoses(params object[] args)
+        {
+            var poses = (TrackedDevicePose_t[])args[0];
+
+            for (int i = 0; i < poses.Length; i++)
+            {
+                var connected = poses[i].bDeviceIsConnected;
+                if (connected != SteamVR.connected[i])
+                {
+                    SteamVR_Event.Send("device_connected", i, connected);
+                }
+            }
+
+            if (poses.Length > OpenVR.k_unTrackedDeviceIndex_Hmd)
+            {
+                var result = poses[OpenVR.k_unTrackedDeviceIndex_Hmd].eTrackingResult;
+
+                var initializing = result == ETrackingResult.Uninitialized;
+                if (initializing != SteamVR.initializing)
+                {
+                    SteamVR_Event.Send("initializing", initializing);
+                }
+
+                var calibrating =
+                    result == ETrackingResult.Calibrating_InProgress ||
+                    result == ETrackingResult.Calibrating_OutOfRange;
+                if (calibrating != SteamVR.calibrating)
+                {
+                    SteamVR_Event.Send("calibrating", calibrating);
+                }
+
+                var outOfRange =
+                    result == ETrackingResult.Running_OutOfRange ||
+                    result == ETrackingResult.Calibrating_OutOfRange;
+                if (outOfRange != SteamVR.outOfRange)
+                {
+                    SteamVR_Event.Send("out_of_range", outOfRange);
+                }
+            }
+        }
+        #endregion
+
+
     }
 }

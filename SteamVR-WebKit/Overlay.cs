@@ -1,5 +1,6 @@
 ﻿using OpenTK;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -172,6 +173,7 @@ namespace SteamVR_WebKit
                 {
                     SteamVR_Event.Listen("TrackedDeviceRoleChanged", HandleDeviceChange);
                     SteamVR_Event.Listen("device_connected", HandleDeviceChange);
+                    _controllerListenersSetup = true;
                 }
             }
         }

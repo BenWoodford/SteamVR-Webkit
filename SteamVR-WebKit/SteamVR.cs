@@ -232,10 +232,10 @@ public class SteamVR : System.IDisposable
     {
         hmd = OpenVR.System;
         System.Console.WriteLine("Connected to " + hmd_TrackingSystemName + ":" + hmd_SerialNumber);
-
+        
         compositor = OpenVR.Compositor;
         overlay = OpenVR.Overlay;
-
+        
         // Setup render values
         uint w = 0, h = 0;
         hmd.GetRecommendedRenderTargetSize(ref w, ref h);
@@ -247,7 +247,7 @@ public class SteamVR : System.IDisposable
 
         float r_left = 0.0f, r_right = 0.0f, r_top = 0.0f, r_bottom = 0.0f;
         hmd.GetProjectionRaw(EVREye.Eye_Right, ref r_left, ref r_right, ref r_top, ref r_bottom);
-
+        
         SteamVR_Event.Listen("initializing", OnInitializing);
         SteamVR_Event.Listen("calibrating", OnCalibrating);
         SteamVR_Event.Listen("out_of_range", OnOutOfRange);

@@ -31,7 +31,7 @@ namespace SteamVR_WebKit_Test
             SteamVR_WebKit.SteamVR_WebKit.FPS = 30;
 
             //Notifications.RegisterIcon("default", new Bitmap(Environment.CurrentDirectory + "\\Resources\\alert.png"));
-
+            /*
             basicOverlay = new WebKitOverlay(new Uri("file://" + Environment.CurrentDirectory + "/Resources/index.html"), 1024, 1024, "webkitTest", "WebKit-Core", OverlayType.Dashboard);
             //overlay = new WebKitOverlay(new Uri("https://codepen.io/AtomicNoggin/full/yqwsG/"), 1024, 1024, "webkitTest", "WebKit", OverlayType.Dashboard);
             basicOverlay.DashboardOverlay.Width = 2.0f;
@@ -53,7 +53,7 @@ namespace SteamVR_WebKit_Test
             applicationsOverlay.DashboardOverlay.SetThumbnail("Resources/webkit-logo.png");
             applicationsOverlay.BrowserPreInit += ApplicationsOverlay_BrowserPreInit;
             applicationsOverlay.BrowserReady += ApplicationsOverlay_BrowserReady;
-            applicationsOverlay.StartBrowser();
+            applicationsOverlay.StartBrowser();*/
 
             controllerOverlay = new WebKitOverlay(new Uri("https://www.youtube.com/embed/XOn5ckvIF3U?autoplay=1&start=27"), 550, 250, "controllerTest", "controllerVideo", OverlayType.InGame);
             controllerOverlay.InGameOverlay.SetDeviceAttachment(AttachmentType.RightController, new Vector3(0.0f, 0.0f, -0.1f), Quaternion.FromEulerAngles(0.0f, 0.0f, 1.35f));

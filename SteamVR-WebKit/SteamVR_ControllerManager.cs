@@ -167,7 +167,6 @@ namespace Valve.VR
                 var system = OpenVR.System;
                 if (system != null && system.GetTrackedDeviceClass(index) == ETrackedDeviceClass.Controller)
                 {
-                    Console.WriteLine("Controller connection dectected");
                     this.connected[index] = true;
                     changed = !changed; // if we clear and set the same index, nothing has changed
                 }

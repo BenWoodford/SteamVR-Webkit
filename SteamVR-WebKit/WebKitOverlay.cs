@@ -218,6 +218,9 @@ namespace SteamVR_WebKit
 
                 await LoadPageAsync(_browser);
             }
+
+            //If while we waited any JS commands were queued, then run those now
+            ExecQueuedJS();
         }
 
         private void _browser_BrowserInitialized(object sender, EventArgs e)
@@ -462,6 +465,30 @@ namespace SteamVR_WebKit
             }
 
             PostDrawCallback?.Invoke(this, new EventArgs());
+        }
+        
+        Queue<string> JSCommandQueue = new Queue<string>();
+
+        private void ExecAsyncJS(string js)
+        {
+            Browser.GetBrowser().FocusedFrame.ExecuteJavaScriptAsync(js);
+        }
+
+        public void TryExecAsyncJS(string js)
+        {
+            if (_inGameOverlay.AttachmentSuccess)
+                ExecAsyncJS(js);
+            else
+                JSCommandQueue.Enqueue(js);
+        }
+
+        public void ExecQueuedJS()
+        {
+            foreach (string jsCmd in JSCommandQueue.ToList())
+            {
+                ExecAsyncJS(jsCmd);
+                JSCommandQueue.Dequeue();
+            }
         }
     }
 }
