@@ -91,8 +91,7 @@ namespace SteamVR_WebKit
             _compositor = OpenVR.Compositor;
             _overlay = OpenVR.Overlay;
             _applications = OpenVR.Applications;
-
-            //SteamVR = SteamVR.instance;
+            
             _controllerManager = new SteamVR_ControllerManager();
 
             Console.WriteLine("SteamVR_WebKit Initialised");
@@ -103,7 +102,19 @@ namespace SteamVR_WebKit
 
         private static void CurrentDomain_ProcessExit(object sender, EventArgs e)
         {
-            Cef.Shutdown();
+            CefShutdown();
+        }
+
+        public static void CefShutdown()
+        {
+            try
+            {
+                Cef.Shutdown();
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("SteamVR_WebKit Cef.Shutdown failed: " + e.Message);
+            }
         }
 
         static void InitOpenVR()
@@ -130,11 +141,7 @@ namespace SteamVR_WebKit
             {
                 throw new Exception("Failed to init Overlay!");
             }
-
-            //SteamVR_Event.Listen("initializing", OnInitializing);
-            //SteamVR_Event.Listen("calibrating", OnCalibrating);
-            //SteamVR_Event.Listen("out_of_range", OnOutOfRange);
-            //SteamVR_Event.Listen("device_connected", OnDeviceConnected);
+            
             SteamVR_Event.Listen("new_poses", OnNewPoses);
         }
         
