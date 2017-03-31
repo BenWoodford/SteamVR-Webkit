@@ -177,9 +177,19 @@ namespace SteamVR_WebKit
             _dashboardOverlay = null;
         }
 
-        public void StartBrowser()
+        public void StartBrowser(bool waitForAttachment=false)
         {
-            AsyncBrowser();
+            //Allow the overlay to let us know when the controller showed up and we were able to attach to it
+            if (waitForAttachment)
+            {
+                //Its possible that it happened before we got here if the controller was present at start
+                if (_inGameOverlay.AttachmentSuccess)
+                    AsyncBrowser();
+                else
+                    _inGameOverlay.OnAttachmentSuccess += AsyncBrowser;
+            }
+            else
+                AsyncBrowser();
         }
 
         protected virtual async void AsyncBrowser()
@@ -208,6 +218,9 @@ namespace SteamVR_WebKit
 
                 await LoadPageAsync(_browser);
             }
+
+            //If while we waited any JS commands were queued, then run those now
+            ExecQueuedJS();
         }
 
         private void _browser_BrowserInitialized(object sender, EventArgs e)
@@ -383,6 +396,10 @@ namespace SteamVR_WebKit
             if (DashboardOverlay == null && InGameOverlay == null)
                 return false; // We can go no further.
 
+            //This prevents Draw() from failing on get of bitmap when attachment is delayed for controllers
+            if (InGameOverlay != null && !InGameOverlay.AttachmentSuccess)
+                return false;
+
             if (DashboardOverlay != null && DashboardOverlay.IsVisible())
                 return true;
 
@@ -448,6 +465,30 @@ namespace SteamVR_WebKit
             }
 
             PostDrawCallback?.Invoke(this, new EventArgs());
+        }
+        
+        Queue<string> JSCommandQueue = new Queue<string>();
+
+        private void ExecAsyncJS(string js)
+        {
+            Browser.GetBrowser().FocusedFrame.ExecuteJavaScriptAsync(js);
+        }
+
+        public void TryExecAsyncJS(string js)
+        {
+            if (_inGameOverlay.AttachmentSuccess)
+                ExecAsyncJS(js);
+            else
+                JSCommandQueue.Enqueue(js);
+        }
+
+        public void ExecQueuedJS()
+        {
+            foreach (string jsCmd in JSCommandQueue.ToList())
+            {
+                ExecAsyncJS(jsCmd);
+                JSCommandQueue.Dequeue();
+            }
         }
     }
 }

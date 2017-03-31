@@ -1,5 +1,6 @@
 ﻿using OpenTK;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -15,10 +16,17 @@ namespace SteamVR_WebKit
         ulong _handle = 0;
         ulong _thumbnailHandle = 0;
         float _width;
+        float _alpha;
 
         AttachmentType _attachmentType = AttachmentType.Absolute;
         Vector3 _position = Vector3.Zero;
         Quaternion _rotation = Quaternion.Identity;
+
+        public bool AttachmentSuccess { get { return _sentAttachmentSuccess; } }
+
+        bool _controllerListenersSetup = false;
+        bool _sentAttachmentSuccess = false;
+        public Action OnAttachmentSuccess;
 
         bool _ingame = false;
         uint eventSize = (uint)System.Runtime.InteropServices.Marshal.SizeOf(typeof(VREvent_t));
@@ -49,10 +57,42 @@ namespace SteamVR_WebKit
             set { _width = value;  UpdateWidth(); }
         }
 
+        public float Alpha
+        {
+            get { return _alpha; }
+            set { _alpha = value; UpdateAlpha(); }
+        }
+
         public int WidthInCm
         {
             get { return (int)(_width * 100f); }
             set { _width = (float)value / 100; UpdateWidth(); }
+        }
+        
+        /// <summary>
+        /// Create object for an existing overlay by overlay key. Useful to gain access to the stock overlays.
+        /// </summary>
+        /// <param name="pchOverlayKey"></param>
+        public Overlay(string pchOverlayKey)
+        {
+            EVROverlayError ovrErr = EVROverlayError.None;
+
+            ovrErr = SteamVR_WebKit.OverlayManager.FindOverlay(pchOverlayKey, ref _handle);
+
+            if (ovrErr != EVROverlayError.None)
+            {
+                throw new Exception("Failed to create overlay: " + ovrErr.ToString());
+            }
+
+            _key = pchOverlayKey;
+
+            StringBuilder sb = new StringBuilder();
+            SteamVR_WebKit.OverlayManager.GetOverlayName(_handle, new StringBuilder(), 1000, ref ovrErr);
+            _name = sb.ToString();
+
+            SteamVR_WebKit.OverlayManager.GetOverlayWidthInMeters(_handle, ref _width);
+
+            SteamVR_WebKit.OverlayManager.GetOverlayAlpha(_handle, ref _alpha);
         }
 
         public Overlay(string key, string name, float width = 2.0f, bool isInGameOverlay = false)
@@ -63,6 +103,7 @@ namespace SteamVR_WebKit
 
             CreateOverlayInSteamVR();
             Width = width;
+            Alpha = 1.0f;
 
             AppDomain.CurrentDomain.ProcessExit += CurrentDomain_ProcessExit;
         }
@@ -126,7 +167,14 @@ namespace SteamVR_WebKit
                 SetDeviceAttachment((uint)0, position, rotation);
             } else
             {
+                _attachmentType = attachmentType;
                 SetDeviceAttachment(SteamVR_WebKit.OVRSystem.GetTrackedDeviceIndexForControllerRole(attachmentType == AttachmentType.LeftController ? ETrackedControllerRole.LeftHand : ETrackedControllerRole.RightHand), position, rotation);
+                if (!_controllerListenersSetup)
+                {
+                    SteamVR_Event.Listen("TrackedDeviceRoleChanged", HandleDeviceChange);
+                    SteamVR_Event.Listen("device_connected", HandleDeviceChange);
+                    _controllerListenersSetup = true;
+                }
             }
         }
 
@@ -144,6 +192,26 @@ namespace SteamVR_WebKit
             HmdMatrix34_t matrix = TransformUtils.OpenTKMatrixToOpenVRMatrix(translationMatrix * rotationMatrix);
 
             SteamVR_WebKit.OverlayManager.SetOverlayTransformTrackedDeviceRelative(_handle, index, ref matrix);
+        }
+
+        private void HandleDeviceChange(params object[] args)
+        {
+            var index = (uint)(int)args[0];
+            var system = OpenVR.System;
+            if (system != null && system.GetTrackedDeviceClass(index) == ETrackedDeviceClass.Controller)
+            {
+                //Check to ensure the device changed is the device we're interested in
+                uint changedDeviceIndex = SteamVR_WebKit.OVRSystem.GetTrackedDeviceIndexForControllerRole(_attachmentType == AttachmentType.LeftController ? ETrackedControllerRole.LeftHand : ETrackedControllerRole.RightHand);
+                if (changedDeviceIndex != OpenVR.k_unTrackedDeviceIndexInvalid)
+                {
+                    SetDeviceAttachment(changedDeviceIndex, _position, _rotation);
+                    if (!_sentAttachmentSuccess)
+                    {
+                        if (OnAttachmentSuccess != null) OnAttachmentSuccess();
+                        _sentAttachmentSuccess = true;
+                    }
+                }
+            }
         }
 
         void SetThumbnailPath(string path)
@@ -223,6 +291,11 @@ namespace SteamVR_WebKit
             SteamVR_WebKit.OverlayManager.SetOverlayWidthInMeters(_handle, _width);
         }
 
+        void UpdateAlpha()
+        {
+            SteamVR_WebKit.OverlayManager.SetOverlayAlpha(_handle, _alpha);
+        }
+
         public void SetTexture(ref Texture_t texture)
         {
             EVROverlayError err = SteamVR_WebKit.OverlayManager.SetOverlayTexture(_handle, ref texture);
@@ -252,6 +325,12 @@ namespace SteamVR_WebKit
 
             if(_thumbnailHandle > 0)
                 SteamVR_WebKit.OverlayManager.DestroyOverlay(_thumbnailHandle);
+
+            if (_controllerListenersSetup)
+            {
+                SteamVR_Event.Listen("TrackedDeviceRoleChanged", HandleDeviceChange);
+                SteamVR_Event.Listen("device_connected", HandleDeviceChange);
+            }
         }
 
         public bool IsVisible()
