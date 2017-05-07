@@ -18,13 +18,14 @@ namespace SteamVR_WebKit
             _manifestFileName = Path.GetFileName(_manifestFullPath);
         }
 
-        public void InstallManifest(bool cleanInstall = false)
+        public void InstallManifest(bool cleanInstall = false, bool autoStart = true)
         {
             if (File.Exists(_manifestFullPath))
             {
                 bool alreadyInstalled = false;
                 if (OpenVR.Applications.IsApplicationInstalled(_applicationKey))
                 {
+                    Console.WriteLine("Found existing installation.");
                     if (cleanInstall)
                     {
                         StringBuilder buffer = new StringBuilder(1024);
@@ -36,7 +37,9 @@ namespace SteamVR_WebKit
                             string oldManifestPath = Path.Combine(buffer.ToString(), _manifestFileName);
                             if (!_manifestFullPath.Equals(oldManifestPath))
                             {
+                                Console.WriteLine("Clean install: Removing old manifest.");
                                 OpenVR.Applications.RemoveApplicationManifest(oldManifestPath);
+                                Console.WriteLine(oldManifestPath);
                             }
                             else
                             {
@@ -49,12 +52,16 @@ namespace SteamVR_WebKit
                         alreadyInstalled = true;
                     }
                 }
+                else
+                {
+                    Console.WriteLine("Could not find existing installation. Installing now...");
+                }
                 EVRApplicationError error = OpenVR.Applications.AddApplicationManifest(_manifestFullPath, false);
                 if (error != EVRApplicationError.None)
                 {
                     throw new Exception("Could not add application manifest: " + error.ToString());
                 }
-                else if (!alreadyInstalled || cleanInstall)
+                else if (autoStart && (!alreadyInstalled || cleanInstall))
                 {
                     error = OpenVR.Applications.SetApplicationAutoLaunch(_applicationKey, true);
                     if (error != EVRApplicationError.None)
