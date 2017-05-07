@@ -79,6 +79,7 @@
     <Compile Include="Overlay.cs" />
     <Compile Include="OverlayType.cs" />
     <Compile Include="SteamVR.cs" />
+    <Compile Include="SteamVR_Application.cs" />
     <Compile Include="SteamVR_Controller.cs" />
     <Compile Include="SteamVR_ControllerManager.cs" />
     <Compile Include="SteamVR_Event.cs" />

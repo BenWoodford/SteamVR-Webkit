@@ -1,0 +1,16 @@
+{
+	"source" : "builtin",
+	"applications": [{
+		"app_key": "BenWoodford.SteamVR-WebKit-Test",
+		"launch_type": "binary",
+		"binary_path_windows": "SteamVR-WebKit-Test.exe",
+		"is_dashboard_overlay": true,
+
+		"strings": {
+			"en_us": {
+				"name": "SteamVR WebKit Test",
+				"description": "Demo of SteamVR Webkit"
+			}
+		}
+	}]
+}

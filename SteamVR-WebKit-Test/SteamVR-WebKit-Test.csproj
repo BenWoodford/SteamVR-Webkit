@@ -80,6 +80,9 @@
     <None Include="App.config" />
     <None Include="OpenTK.dll.config" />
     <None Include="packages.config" />
+    <Content Include="Resources\manifest.vrmanifest">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\SteamVR-WebKit\SteamVR-WebKit.csproj">
