@@ -2,22 +2,41 @@
 using System.IO;
 using System.Text;
 using Valve.VR;
+using Newtonsoft.Json;
 
 namespace SteamVR_WebKit
 {
+    /// <summary>
+    /// Registers applications to SteamVR/OpenVR and allows to set autostart (starts with SteamVR). A .vrmanifest file is needed.
+    /// No file is copied. Instead OepnVR is provided with the current working directory. Removing the directory will unregister
+    /// the application on next start.
+    /// </summary>
     public class SteamVR_Application
     {
         private string _applicationKey;
         private string _manifestFullPath;
         private string _manifestFileName;
 
-        public SteamVR_Application(string applicationKey, string manifestPath = "manifest.vrmanifest")
+        public SteamVR_Application(string manifestPath = "manifest.vrmanifest")
         {
-            _applicationKey = applicationKey;
             _manifestFullPath = Path.GetFullPath(manifestPath);
             _manifestFileName = Path.GetFileName(_manifestFullPath);
+            string manifestJSON = File.ReadAllText(manifestPath);
+            VRManifest manifest = JsonConvert.DeserializeObject<VRManifest>(manifestJSON);
+            if (manifest.applications.Count != 0)
+            {
+                _applicationKey = manifest.applications[0].app_key;
+            } else
+            {
+                throw new Exception("No application found in VR manifest file: " + _manifestFullPath);
+            }
         }
 
+        /// <summary>
+        /// Installs/Registers the application. This does not copy any files, but instead points OpenVR to the current working directory.
+        /// </summary>
+        /// <param name="cleanInstall">If an existing installation is found, setting cleanInstall to true will remove the old registration first (no files are deleted).</param>
+        /// <param name="autoStart">If true, the registered application will start with SteamVR</param>
         public void InstallManifest(bool cleanInstall = false, bool autoStart = true)
         {
             if (File.Exists(_manifestFullPath))
@@ -76,6 +95,9 @@ namespace SteamVR_WebKit
             }
         }
 
+        /// <summary>
+        /// Uninstalls/Unregisters the application. No files are deleted.
+        /// </summary>
         public void RemoveManifest()
         {
             if (File.Exists(_manifestFullPath))
@@ -95,7 +117,10 @@ namespace SteamVR_WebKit
             }
         }
 
-
+        /// <summary>
+        /// Sets the autostart property.
+        /// </summary>
+        /// <param name="value">If true, the application will start with SteamVR</param>
         public void SetAutoStartEnabled(bool value)
         {
             EVRApplicationError error = OpenVR.Applications.SetApplicationAutoLaunch(_applicationKey, value);

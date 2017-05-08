@@ -62,8 +62,10 @@ namespace SteamVR_WebKit_Test
             //controllerOverlay.BrowserReady += ControllerOverlay_BrowserReady;
             //controllerOverlay.StartBrowser(true);
 
-            SteamVR_Application application = new SteamVR_Application("BenWoodford.SteamVR-WebKit-Test"); // TODO: Read key from vrmanifest to prevent mismatch
+            SteamVR_Application application = new SteamVR_Application();
             application.InstallManifest(true);
+            //application.SetAutoStartEnabled(false);
+            //application.RemoveManifest();
 
             SteamVR_WebKit.SteamVR_WebKit.RunOverlays(); // Runs update/draw calls for all active overlays. And yes, it's blocking.
         }

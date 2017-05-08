@@ -85,6 +85,7 @@
     <Compile Include="SteamVR_Event.cs" />
     <Compile Include="SteamVR_WebKit.cs" />
     <Compile Include="TransformUtils.cs" />
+    <Compile Include="VRManifest.cs" />
     <Compile Include="WebKitOverlay.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
