@@ -72,7 +72,7 @@ namespace Valve.VR
                     {
                         var label = (i < 2) ? labels[i] : (i - 1).ToString();
                         //ShowObject(obj.transform, "hidden (" + label + ")");
-                        Console.WriteLine("Controller manager wants to show the " + label + " controller.");
+                        SteamVR_WebKit.SteamVR_WebKit.Log("Controller manager wants to show the " + label + " controller.");
                     }
                 }
             }
@@ -85,7 +85,7 @@ namespace Valve.VR
                     {
                         var label = (i < 2) ? labels[i] : (i - 1).ToString();
                         //HideObject(obj.transform, "hidden (" + label + ")");
-                        Console.WriteLine("Controller manager wants to hide the " + label + " controller.");
+                        SteamVR_WebKit.SteamVR_WebKit.Log("Controller manager wants to hide the " + label + " controller.");
                     }
                 }
             }
@@ -141,7 +141,7 @@ namespace Valve.VR
                     {
                         obj.SetActive(true);
                         //obj.BroadcastMessage("SetDeviceIndex", (int)trackedDeviceIndex, SendMessageOptions.DontRequireReceiver);
-                        Console.WriteLine("obj.BroadcastMessage(\"SetDeviceIndex\", (int)trackedDeviceIndex="+ trackedDeviceIndex + ", SendMessageOptions.DontRequireReceiver);");
+                        //SteamVR_WebKit.SteamVR_WebKit.Log("obj.BroadcastMessage(\"SetDeviceIndex\", (int)trackedDeviceIndex="+ trackedDeviceIndex + ", SendMessageOptions.DontRequireReceiver);");
                     }
                 }
             }
@@ -150,7 +150,7 @@ namespace Valve.VR
         // Keep track of assigned roles.
         private void OnTrackedDeviceRoleChanged(params object[] args)
         {
-            Console.WriteLine("Controller role change detected");
+            SteamVR_WebKit.SteamVR_WebKit.Log("Controller role change detected");
             Refresh();
         }
 

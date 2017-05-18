@@ -16,7 +16,7 @@ namespace Valve.VR
         public void SetActive(bool state)
         {
             IsActive = state;
-            Console.WriteLine("Controller manager set the active state of the " + Ident + " controller to " + state + ".");
+            SteamVR_WebKit.SteamVR_WebKit.Log("Controller manager set the active state of the " + Ident + " controller to " + state + ".");
         }
     }
 }

@@ -251,7 +251,7 @@ namespace SteamVR_WebKit
                 SteamVR_WebKit.OverlayManager.SetOverlayFlag(_handle, VROverlayFlags.SendVRScrollEvents, true);
             }
 
-            Console.WriteLine("Overlay Handle " + _handle + ", Thumbnail Handle: " + _thumbnailHandle);
+            SteamVR_WebKit.Log("Overlay Handle " + _handle + ", Thumbnail Handle: " + _thumbnailHandle);
 
             if (ovrErr != EVROverlayError.None)
             {
@@ -301,7 +301,7 @@ namespace SteamVR_WebKit
             EVROverlayError err = SteamVR_WebKit.OverlayManager.SetOverlayTexture(_handle, ref texture);
 
             if (err != EVROverlayError.None)
-                Console.WriteLine("Failed to send texture: " + err.ToString());
+                SteamVR_WebKit.Log("Failed to send texture: " + err.ToString());
         }
 
         public void Show()

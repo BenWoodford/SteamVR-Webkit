@@ -240,7 +240,7 @@ namespace SteamVR_WebKit
                 //Wait for while page to finish loading not just the first frame
                 if (!args.IsLoading)
                 {
-                    Console.WriteLine("Page Loaded.");
+                    SteamVR_WebKit.Log("Page Loaded.");
                     PageReady?.Invoke(browser, new EventArgs());
 
                     browser.LoadingStateChanged -= handler;

@@ -23,6 +23,10 @@ namespace SteamVR_WebKit
 
         static bool _initialised = false;
 
+        public delegate void LogEventDelegate(string line);
+
+        public static event LogEventDelegate LogEvent;
+
         public static bool Initialised { get { return _initialised; } }
 
         public static List<WebKitOverlay> Overlays;
@@ -94,7 +98,7 @@ namespace SteamVR_WebKit
             
             _controllerManager = new SteamVR_ControllerManager();
 
-            Console.WriteLine("SteamVR_WebKit Initialised");
+            SteamVR_WebKit.Log("SteamVR_WebKit Initialised");
 
             _initialised = true;
 
@@ -113,7 +117,7 @@ namespace SteamVR_WebKit
             }
             catch (Exception e)
             {
-                Console.WriteLine("SteamVR_WebKit Cef.Shutdown failed: " + e.Message);
+                SteamVR_WebKit.Log("SteamVR_WebKit Cef.Shutdown failed: " + e.Message);
             }
         }
 
@@ -172,6 +176,14 @@ namespace SteamVR_WebKit
                 }
                 fpsWatch.Stop();
                 Thread.Sleep(fpsWatch.ElapsedMilliseconds >= _frameSleep ? 0 : (int)(_frameSleep - fpsWatch.ElapsedMilliseconds));
+            }
+        }
+
+        public static void Log(string message)
+        {
+            if(LogEvent != null)
+            {
+                LogEvent(message);
             }
         }
         

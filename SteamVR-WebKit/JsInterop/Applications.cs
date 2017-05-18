@@ -43,10 +43,10 @@ namespace SteamVR_WebKit.JsInterop
 
 #if DEBUG
                 if(err != EVRApplicationError.None)
-                    Console.WriteLine("EVRApplicationError on " + AppKey + " property " + prop.ToString() + ": " + err.ToString());
+                    SteamVR_WebKit.Log("EVRApplicationError on " + AppKey + " property " + prop.ToString() + ": " + err.ToString());
 #endif
 
-                //Console.WriteLine(propertyBuffer.ToString());
+                //SteamVR_WebKit.Log(propertyBuffer.ToString());
 
                 return propertyBuffer.ToString();
             }

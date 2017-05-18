@@ -29,6 +29,7 @@ namespace SteamVR_WebKit_Test
         {
             SteamVR_WebKit.SteamVR_WebKit.Init();
             SteamVR_WebKit.SteamVR_WebKit.FPS = 30;
+            SteamVR_WebKit.SteamVR_WebKit.LogEvent += SteamVR_WebKit_LogEvent;
 
             //Notifications.RegisterIcon("default", new Bitmap(Environment.CurrentDirectory + "\\Resources\\alert.png"));
             /*
@@ -63,6 +64,11 @@ namespace SteamVR_WebKit_Test
             controllerOverlay.StartBrowser(true);
 
             SteamVR_WebKit.SteamVR_WebKit.RunOverlays(); // Runs update/draw calls for all active overlays. And yes, it's blocking.
+        }
+
+        private static void SteamVR_WebKit_LogEvent(string line)
+        {
+            Console.WriteLine(line);
         }
 
         private static void ApplicationsOverlay_BrowserPreInit(object sender, EventArgs e)
@@ -103,12 +109,12 @@ namespace SteamVR_WebKit_Test
         private static void Browser_ConsoleMessage(object sender, CefSharp.ConsoleMessageEventArgs e)
         {
             string[] srcSplit = e.Source.Split('/'); // We only want the filename
-            Console.WriteLine("[CONSOLE " + srcSplit[srcSplit.Length - 1] + ":" + e.Line + "] " + e.Message);
+            SteamVR_WebKit.SteamVR_WebKit.Log("[CONSOLE " + srcSplit[srcSplit.Length - 1] + ":" + e.Line + "] " + e.Message);
         }
 
         private static void Overlay_BrowserPreInit(object sender, EventArgs e)
         {
-            Console.WriteLine("Browser is ready.");
+            SteamVR_WebKit.SteamVR_WebKit.Log("Browser is ready.");
 
             basicOverlay.Browser.ConsoleMessage += Browser_ConsoleMessage;
             basicOverlay.Browser.RegisterJsObject("testObject", new JsCallbackTest());

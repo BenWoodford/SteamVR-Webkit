@@ -51,7 +51,7 @@ namespace SteamVR_WebKit.JsInterop
             
             if(err != EVRNotificationError.OK)
             {
-                Console.WriteLine("Notification Failure: " + err.ToString());
+                SteamVR_WebKit.Log("Notification Failure: " + err.ToString());
                 return false;
             }
             return true;
