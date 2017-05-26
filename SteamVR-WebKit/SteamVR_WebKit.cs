@@ -27,6 +27,12 @@ namespace SteamVR_WebKit
 
         public static event LogEventDelegate LogEvent;
 
+        public static event EventHandler PreUpdateCallback;
+        public static event EventHandler PostUpdateCallback;
+
+        public static event EventHandler PreDrawCallback;
+        public static event EventHandler PostDrawCallback;
+
         public static bool Initialised { get { return _initialised; } }
 
         public static List<WebKitOverlay> Overlays;
@@ -169,11 +175,24 @@ namespace SteamVR_WebKit
 
                 UpdatePoses();
 
+                PreUpdateCallback?.Invoke(null, null);
+
                 foreach (WebKitOverlay overlay in Overlays)
                 {
                     overlay.Update();
+                }
+
+                PostUpdateCallback?.Invoke(null, null);
+
+                PreDrawCallback?.Invoke(null, null);
+
+                foreach (WebKitOverlay overlay in Overlays)
+                {
                     overlay.Draw();
                 }
+
+                PostDrawCallback?.Invoke(null, null);
+
                 fpsWatch.Stop();
                 Thread.Sleep(fpsWatch.ElapsedMilliseconds >= _frameSleep ? 0 : (int)(_frameSleep - fpsWatch.ElapsedMilliseconds));
             }

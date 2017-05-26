@@ -11,12 +11,12 @@ namespace SteamVR_WebKit_Test
         public string TestString = "This is a test.";
         public void TestStuff()
         {
-            SteamVR_WebKit.Log("Called a test from JS!");
+            SteamVR_WebKit.SteamVR_WebKit.Log("Called a test from JS!");
         }
 
         public bool TestMoreStuff(string str)
         {
-            SteamVR_WebKit.Log(str);
+            SteamVR_WebKit.SteamVR_WebKit.Log(str);
             return false;
         }
     }

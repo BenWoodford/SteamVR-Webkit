@@ -7,6 +7,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using System.Text;
 using Valve.VR;
 
 namespace Valve.VR
@@ -351,7 +352,7 @@ namespace Valve.VR
         internal _GetApplicationKeyByIndex GetApplicationKeyByIndex;
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-        internal delegate EVRApplicationError _GetApplicationKeyByProcessId(uint unProcessId, string pchAppKeyBuffer, uint unAppKeyBufferLen);
+        internal delegate EVRApplicationError _GetApplicationKeyByProcessId(uint unProcessId, StringBuilder pchAppKeyBuffer, uint unAppKeyBufferLen);
         [MarshalAs(UnmanagedType.FunctionPtr)]
         internal _GetApplicationKeyByProcessId GetApplicationKeyByProcessId;
 
@@ -426,12 +427,12 @@ namespace Valve.VR
         internal _SetDefaultApplicationForMimeType SetDefaultApplicationForMimeType;
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-        internal delegate bool _GetDefaultApplicationForMimeType(string pchMimeType, string pchAppKeyBuffer, uint unAppKeyBufferLen);
+        internal delegate bool _GetDefaultApplicationForMimeType(string pchMimeType, StringBuilder pchAppKeyBuffer, uint unAppKeyBufferLen);
         [MarshalAs(UnmanagedType.FunctionPtr)]
         internal _GetDefaultApplicationForMimeType GetDefaultApplicationForMimeType;
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-        internal delegate bool _GetApplicationSupportedMimeTypes(string pchAppKey, string pchMimeTypesBuffer, uint unMimeTypesBuffer);
+        internal delegate bool _GetApplicationSupportedMimeTypes(string pchAppKey, StringBuilder pchMimeTypesBuffer, uint unMimeTypesBuffer);
         [MarshalAs(UnmanagedType.FunctionPtr)]
         internal _GetApplicationSupportedMimeTypes GetApplicationSupportedMimeTypes;
 
@@ -1872,7 +1873,7 @@ namespace Valve.VR
             EVRApplicationError result = FnTable.GetApplicationKeyByIndex(unApplicationIndex, pchAppKeyBuffer, unAppKeyBufferLen);
             return result;
         }
-        public EVRApplicationError GetApplicationKeyByProcessId(uint unProcessId, string pchAppKeyBuffer, uint unAppKeyBufferLen)
+        public EVRApplicationError GetApplicationKeyByProcessId(uint unProcessId, System.Text.StringBuilder pchAppKeyBuffer, uint unAppKeyBufferLen)
         {
             EVRApplicationError result = FnTable.GetApplicationKeyByProcessId(unProcessId, pchAppKeyBuffer, unAppKeyBufferLen);
             return result;
@@ -1947,12 +1948,12 @@ namespace Valve.VR
             EVRApplicationError result = FnTable.SetDefaultApplicationForMimeType(pchAppKey, pchMimeType);
             return result;
         }
-        public bool GetDefaultApplicationForMimeType(string pchMimeType, string pchAppKeyBuffer, uint unAppKeyBufferLen)
+        public bool GetDefaultApplicationForMimeType(string pchMimeType, StringBuilder pchAppKeyBuffer, uint unAppKeyBufferLen)
         {
             bool result = FnTable.GetDefaultApplicationForMimeType(pchMimeType, pchAppKeyBuffer, unAppKeyBufferLen);
             return result;
         }
-        public bool GetApplicationSupportedMimeTypes(string pchAppKey, string pchMimeTypesBuffer, uint unMimeTypesBuffer)
+        public bool GetApplicationSupportedMimeTypes(string pchAppKey, StringBuilder pchMimeTypesBuffer, uint unMimeTypesBuffer)
         {
             bool result = FnTable.GetApplicationSupportedMimeTypes(pchAppKey, pchMimeTypesBuffer, unMimeTypesBuffer);
             return result;
