@@ -47,21 +47,26 @@ namespace SteamVR_WebKit_Test
             videoOverlay.BrowserPreInit += VideoOverlay_BrowserPreInit;
             videoOverlay.BrowserReady += VideoOverlay_BrowserReady;
             videoOverlay.DashboardOverlay.Width = 2.0f;
-            videoOverlay.StartBrowser();
+            videoOverlay.StartBrowser();*/
 
             applicationsOverlay = new WebKitOverlay(new Uri("file://" + Environment.CurrentDirectory + "/Resources/applications.html"), 1024, 1024, "webkitTestApps", "WebKit-Apps", OverlayType.Dashboard);
             applicationsOverlay.DashboardOverlay.Width = 2.0f;
             applicationsOverlay.DashboardOverlay.SetThumbnail("Resources/webkit-logo.png");
             applicationsOverlay.BrowserPreInit += ApplicationsOverlay_BrowserPreInit;
             applicationsOverlay.BrowserReady += ApplicationsOverlay_BrowserReady;
-            applicationsOverlay.StartBrowser();*/
+            applicationsOverlay.StartBrowser();
 
-            controllerOverlay = new WebKitOverlay(new Uri("https://www.youtube.com/embed/XOn5ckvIF3U?autoplay=1&start=27"), 550, 250, "controllerTest", "controllerVideo", OverlayType.InGame);
-            controllerOverlay.InGameOverlay.SetDeviceAttachment(AttachmentType.RightController, new Vector3(0.0f, 0.0f, -0.1f), Quaternion.FromEulerAngles(0.0f, 0.0f, 1.35f));
-            controllerOverlay.InGameOverlay.Width = .25f;
-            controllerOverlay.BrowserPreInit += ControllerOverlay_BrowserPreInit;
-            controllerOverlay.BrowserReady += ControllerOverlay_BrowserReady;
-            controllerOverlay.StartBrowser(true);
+            //controllerOverlay = new WebKitOverlay(new Uri("https://www.youtube.com/embed/XOn5ckvIF3U?autoplay=1&start=27"), 550, 250, "controllerTest", "controllerVideo", OverlayType.InGame);
+            //controllerOverlay.InGameOverlay.SetDeviceAttachment(AttachmentType.RightController, new Vector3(0.0f, 0.0f, -0.1f), Quaternion.FromEulerAngles(0.0f, 0.0f, 1.35f));
+            //controllerOverlay.InGameOverlay.Width = .25f;
+            //controllerOverlay.BrowserPreInit += ControllerOverlay_BrowserPreInit;
+            //controllerOverlay.BrowserReady += ControllerOverlay_BrowserReady;
+            //controllerOverlay.StartBrowser(true);
+
+            SteamVR_Application application = new SteamVR_Application();
+            application.InstallManifest(true);
+            //application.SetAutoStartEnabled(false);
+            //application.RemoveManifest();
 
             SteamVR_WebKit.SteamVR_WebKit.RunOverlays(); // Runs update/draw calls for all active overlays. And yes, it's blocking.
         }
