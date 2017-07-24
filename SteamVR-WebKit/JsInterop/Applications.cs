@@ -12,13 +12,13 @@ namespace SteamVR_WebKit.JsInterop
     {
         private CVRApplications _applicationsInstance;
 
-        public class VRApplication
+        public class Application
         {
             public string AppKey { get; set; }
             public string Name { get; set; }
             public string ImagePath { get; set; }
 
-            public VRApplication(string appKey)
+            public Application(string appKey)
             {
                 AppKey = appKey;
 
@@ -59,7 +59,7 @@ namespace SteamVR_WebKit.JsInterop
 
         public string GetApplicationsList()
         {
-            List<VRApplication> apps = new List<VRApplication>();
+            List<Application> apps = new List<Application>();
 
             StringBuilder keyBuffer = new StringBuilder(255);
             EVRApplicationError err = EVRApplicationError.None;
@@ -71,12 +71,38 @@ namespace SteamVR_WebKit.JsInterop
                 if (err != EVRApplicationError.None)
                     throw new Exception("EVRApplicationError: " + err.ToString());
 
-                VRApplication newApp = new VRApplication(keyBuffer.ToString());
+                Application newApp = new Application(keyBuffer.ToString());
                 apps.Add(newApp);
             }
 
             string ret = JsonConvert.SerializeObject(apps);
             return ret;
+        }
+
+        public class EnUs
+        {
+            public string name { get; set; }
+            public string description { get; set; }
+        }
+
+        public class Strings
+        {
+            public EnUs en_us { get; set; }
+        }
+
+        public class ManifestApplication
+        {
+            public string app_key { get; set; }
+            public string launch_type { get; set; }
+            public string binary_path_windows { get; set; }
+            public bool is_dashboard_overlay { get; set; }
+            public Strings strings { get; set; }
+        }
+
+        public class VRManifest
+        {
+            public string source { get; set; }
+            public List<ManifestApplication> applications { get; set; }
         }
     }
 }

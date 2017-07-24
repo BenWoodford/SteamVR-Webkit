@@ -22,7 +22,7 @@ namespace SteamVR_WebKit
             _manifestFullPath = Path.GetFullPath(manifestPath);
             _manifestFileName = Path.GetFileName(_manifestFullPath);
             string manifestJSON = File.ReadAllText(manifestPath);
-            VRManifest manifest = JsonConvert.DeserializeObject<VRManifest>(manifestJSON);
+            JsInterop.Applications.VRManifest manifest = JsonConvert.DeserializeObject<JsInterop.Applications.VRManifest>(manifestJSON);
             if (manifest.applications.Count != 0)
             {
                 _applicationKey = manifest.applications[0].app_key;
