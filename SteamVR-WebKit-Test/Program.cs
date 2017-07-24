@@ -63,8 +63,8 @@ namespace SteamVR_WebKit_Test
             //controllerOverlay.BrowserReady += ControllerOverlay_BrowserReady;
             //controllerOverlay.StartBrowser(true);
 
-            SteamVR_Application application = new SteamVR_Application();
-            application.InstallManifest(true);
+            //SteamVR_Application application = new SteamVR_Application();
+            //application.InstallManifest(true);
             //application.SetAutoStartEnabled(false);
             //application.RemoveManifest();
 
