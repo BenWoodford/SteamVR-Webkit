@@ -12,13 +12,13 @@ namespace SteamVR_WebKit.JsInterop
     {
         private CVRApplications _applicationsInstance;
 
-        public class Application
+        public class VRApplication
         {
             public string AppKey { get; set; }
             public string Name { get; set; }
             public string ImagePath { get; set; }
 
-            public Application(string appKey)
+            public VRApplication(string appKey)
             {
                 AppKey = appKey;
 
@@ -59,7 +59,7 @@ namespace SteamVR_WebKit.JsInterop
 
         public string GetApplicationsList()
         {
-            List<Application> apps = new List<Application>();
+            List<VRApplication> apps = new List<VRApplication>();
 
             StringBuilder keyBuffer = new StringBuilder(255);
             EVRApplicationError err = EVRApplicationError.None;
@@ -71,7 +71,7 @@ namespace SteamVR_WebKit.JsInterop
                 if (err != EVRApplicationError.None)
                     throw new Exception("EVRApplicationError: " + err.ToString());
 
-                Application newApp = new Application(keyBuffer.ToString());
+                VRApplication newApp = new VRApplication(keyBuffer.ToString());
                 apps.Add(newApp);
             }
 

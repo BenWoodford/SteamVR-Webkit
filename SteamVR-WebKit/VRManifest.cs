@@ -11,7 +11,7 @@ public class Strings
     public EnUs en_us { get; set; }
 }
 
-public class Application
+public class VRApplication
 {
     public string app_key { get; set; }
     public string launch_type { get; set; }
@@ -23,5 +23,5 @@ public class Application
 public class VRManifest
 {
     public string source { get; set; }
-    public List<Application> applications { get; set; }
+    public List<VRApplication> applications { get; set; }
 }

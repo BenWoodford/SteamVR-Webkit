@@ -7,6 +7,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using System.Text;
 using Valve.VR;
 
 namespace Valve.VR
@@ -356,7 +357,7 @@ namespace Valve.VR
         internal _GetApplicationKeyByIndex GetApplicationKeyByIndex;
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-        internal delegate EVRApplicationError _GetApplicationKeyByProcessId(uint unProcessId, string pchAppKeyBuffer, uint unAppKeyBufferLen);
+        internal delegate EVRApplicationError _GetApplicationKeyByProcessId(uint unProcessId, StringBuilder pchAppKeyBuffer, uint unAppKeyBufferLen);
         [MarshalAs(UnmanagedType.FunctionPtr)]
         internal _GetApplicationKeyByProcessId GetApplicationKeyByProcessId;
 
@@ -1952,7 +1953,7 @@ namespace Valve.VR
             EVRApplicationError result = FnTable.GetApplicationKeyByIndex(unApplicationIndex, pchAppKeyBuffer, unAppKeyBufferLen);
             return result;
         }
-        public EVRApplicationError GetApplicationKeyByProcessId(uint unProcessId, string pchAppKeyBuffer, uint unAppKeyBufferLen)
+        public EVRApplicationError GetApplicationKeyByProcessId(uint unProcessId, StringBuilder pchAppKeyBuffer, uint unAppKeyBufferLen)
         {
             EVRApplicationError result = FnTable.GetApplicationKeyByProcessId(unProcessId, pchAppKeyBuffer, unAppKeyBufferLen);
             return result;
