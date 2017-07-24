@@ -93,6 +93,9 @@ namespace SteamVR_WebKit
             gw = new GameWindow(300, 30); // Invisible GL Context
             GL.Enable(EnableCap.Texture2D);
 
+            if (Cef.IsInitialized)
+                Cef.Shutdown();
+
             Cef.Initialize(settings);
 
             InitOpenVR();

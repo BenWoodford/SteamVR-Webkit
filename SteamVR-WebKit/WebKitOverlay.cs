@@ -177,7 +177,7 @@ namespace SteamVR_WebKit
             _dashboardOverlay = null;
         }
 
-        public void StartBrowser(bool waitForAttachment=false)
+        public void StartBrowser(bool waitForAttachment = false)
         {
             //Allow the overlay to let us know when the controller showed up and we were able to attach to it
             if (waitForAttachment)
@@ -196,14 +196,18 @@ namespace SteamVR_WebKit
         {
             RequestContextSettings reqSettings = new RequestContextSettings { CachePath = CachePath };
 
+            SteamVR_WebKit.Log("Browser Initialising for " + _overlayKey);
+
             using (RequestContext context = new RequestContext(reqSettings))
             {
-                _browser = new ChromiumWebBrowser(Uri.ToString(), _browserSettings, context);
+                _browser = new ChromiumWebBrowser(Uri.ToString(), _browserSettings, context, false);
                 BrowserPreInit?.Invoke(_browser, new EventArgs());
                 _browser.Size = new Size((int)_windowWidth, (int)_windowHeight);
                 _browser.NewScreenshot += Browser_NewScreenshot;
 
                 _browser.BrowserInitialized += _browser_BrowserInitialized;
+
+                _browser.CreateBrowser(IntPtr.Zero);
 
                 if (_zoomLevel > 1)
                 {
@@ -225,6 +229,7 @@ namespace SteamVR_WebKit
 
         private void _browser_BrowserInitialized(object sender, EventArgs e)
         {
+            SteamVR_WebKit.Log("Browser Initialised for " + _overlayKey);
             BrowserReady?.Invoke(_browser, new EventArgs());
         }
 
@@ -240,7 +245,7 @@ namespace SteamVR_WebKit
                 //Wait for while page to finish loading not just the first frame
                 if (!args.IsLoading)
                 {
-                    SteamVR_WebKit.Log("Page Loaded.");
+                    SteamVR_WebKit.Log("Page Loaded for " + _overlayKey);
                     PageReady?.Invoke(browser, new EventArgs());
 
                     browser.LoadingStateChanged -= handler;
@@ -273,6 +278,7 @@ namespace SteamVR_WebKit
 
         protected virtual void SetupTextures()
         {
+            SteamVR_WebKit.Log("Setting up texture for " + _overlayKey);
             GL.BindTexture(TextureTarget.Texture2D, 0);
             _glTextureId = GL.GenTexture();
 
@@ -280,6 +286,8 @@ namespace SteamVR_WebKit
             _textureData.eColorSpace = EColorSpace.Linear;
             _textureData.eType = ETextureType.OpenGL;
             _textureData.handle = (IntPtr)_glTextureId;
+
+            SteamVR_WebKit.Log("Texture Setup complete for " + _overlayKey);
         }
 
         public virtual void UpdateTexture()
@@ -476,7 +484,7 @@ namespace SteamVR_WebKit
 
         public void TryExecAsyncJS(string js)
         {
-            if (_inGameOverlay.AttachmentSuccess)
+            if (_inGameOverlay == null || _inGameOverlay.AttachmentSuccess)
                 ExecAsyncJS(js);
             else
                 JSCommandQueue.Enqueue(js);
