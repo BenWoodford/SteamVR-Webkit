@@ -33,6 +33,8 @@ namespace SteamVR_WebKit
         public static event EventHandler PreDrawCallback;
         public static event EventHandler PostDrawCallback;
 
+        public static bool TraceLevel = false;
+
         public static bool Initialised { get { return _initialised; } }
 
         public static List<WebKitOverlay> Overlays;
