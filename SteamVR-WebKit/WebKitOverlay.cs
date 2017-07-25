@@ -105,6 +105,22 @@ namespace SteamVR_WebKit
             }
         }
 
+        bool _enableNonDashboardInput;
+
+        public bool EnableNonDashboardInput
+        {
+            get { return _enableNonDashboardInput; }
+            set
+            {
+                _enableNonDashboardInput = value;
+
+                if(InGameOverlay != null)
+                {
+                    InGameOverlay.ToggleInput(value);
+                }
+            }
+        }
+
         public ChromiumWebBrowser Browser
         {
             get { return _browser; }
@@ -162,6 +178,8 @@ namespace SteamVR_WebKit
         public void CreateInGameOverlay()
         {
             _inGameOverlay = new Overlay("ingame." + _overlayKey, _overlayName, 2.0f, true);
+            _inGameOverlay.SetTextureSize(_windowWidth, _windowHeight);
+            _inGameOverlay.ToggleInput(EnableNonDashboardInput);
             _inGameOverlay.Show();
         }
 
@@ -452,7 +470,7 @@ namespace SteamVR_WebKit
 
             // Mouse inputs are for dashboards only right now.
 
-            if (DashboardOverlay != null && !DashboardOverlay.IsVisible())
+            if ((!EnableNonDashboardInput || InGameOverlay == null) && DashboardOverlay != null && !DashboardOverlay.IsVisible())
             {
                 if (_wasVisible)
                 {
@@ -469,6 +487,14 @@ namespace SteamVR_WebKit
             if (DashboardOverlay != null)
             {
                 while (DashboardOverlay.PollEvent(ref ovrEvent))
+                {
+                    HandleEvent();
+                }
+            }
+
+            if(EnableNonDashboardInput && InGameOverlay != null)
+            {
+                while(InGameOverlay.PollEvent(ref ovrEvent))
                 {
                     HandleEvent();
                 }

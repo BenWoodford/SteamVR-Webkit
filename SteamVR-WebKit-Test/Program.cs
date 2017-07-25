@@ -44,11 +44,12 @@ namespace SteamVR_WebKit_Test
             //SteamVR_WebKit.SteamVR_WebKit.TraceLevel = true;
 
             videoOverlay = new WebKitOverlay(new Uri("https://www.youtube.com/embed/d7Co9PyueSk"), 1920, 1080, "videoTest", "Video", OverlayType.Both);
-            videoOverlay.InGameOverlay.SetAttachment(AttachmentType.Absolute, new Vector3(1f, 0.2f, -2f), new Vector3(0f, 90f, 0f), "system.vrdashboard");
+            videoOverlay.InGameOverlay.SetAttachment(AttachmentType.Overlay, new Vector3(2.5f, 0.6f, 1.5f), new Vector3(0, 45f, -35f), "system.vrdashboard");
+            videoOverlay.EnableNonDashboardInput = true;
             videoOverlay.InGameOverlay.Width = 3f;
             videoOverlay.BrowserPreInit += VideoOverlay_BrowserPreInit;
             videoOverlay.BrowserReady += VideoOverlay_BrowserReady;
-            videoOverlay.DashboardOverlay.Width = 2.0f;
+            videoOverlay.DashboardOverlay.Width = 3.0f;
             videoOverlay.StartBrowser();
 
 

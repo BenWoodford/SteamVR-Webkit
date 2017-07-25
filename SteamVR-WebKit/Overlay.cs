@@ -303,14 +303,12 @@ namespace SteamVR_WebKit
             if (_ingame)
             {
                 ovrErr = SteamVR_WebKit.OverlayManager.CreateOverlay(Key, Name, ref _handle);
-                SteamVR_WebKit.OverlayManager.SetOverlayInputMethod(_handle, VROverlayInputMethod.None);
+                ToggleInput(false);
             }
             else
             {
                 ovrErr = SteamVR_WebKit.OverlayManager.CreateDashboardOverlay(Key, Name, ref _handle, ref _thumbnailHandle);
-                SteamVR_WebKit.OverlayManager.SetOverlayInputMethod(_handle, VROverlayInputMethod.Mouse);
-                SteamVR_WebKit.OverlayManager.SetOverlayFlag(_handle, VROverlayFlags.ShowTouchPadScrollWheel, true);
-                SteamVR_WebKit.OverlayManager.SetOverlayFlag(_handle, VROverlayFlags.SendVRScrollEvents, true);
+                ToggleInput(true);
             }
 
             SteamVR_WebKit.Log("Overlay Handle " + _handle + ", Thumbnail Handle: " + _thumbnailHandle);
@@ -333,6 +331,22 @@ namespace SteamVR_WebKit
             bounds.uMax = 1;
 
             SteamVR_WebKit.OverlayManager.SetOverlayTextureBounds(_handle, ref bounds);
+        }
+
+        public void ToggleInput(bool toggle)
+        {
+            if (toggle)
+            {
+                SteamVR_WebKit.OverlayManager.SetOverlayInputMethod(_handle, VROverlayInputMethod.Mouse);
+                SteamVR_WebKit.OverlayManager.SetOverlayFlag(_handle, VROverlayFlags.ShowTouchPadScrollWheel, true);
+                SteamVR_WebKit.OverlayManager.SetOverlayFlag(_handle, VROverlayFlags.SendVRScrollEvents, true);
+            }
+            else
+            {
+                SteamVR_WebKit.OverlayManager.SetOverlayInputMethod(_handle, VROverlayInputMethod.None);
+                SteamVR_WebKit.OverlayManager.SetOverlayFlag(_handle, VROverlayFlags.ShowTouchPadScrollWheel, false);
+                SteamVR_WebKit.OverlayManager.SetOverlayFlag(_handle, VROverlayFlags.SendVRScrollEvents, false);
+            }
         }
 
         public void SetTextureSize(float width, float height)
