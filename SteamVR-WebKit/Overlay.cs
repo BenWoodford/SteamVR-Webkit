@@ -18,11 +18,14 @@ namespace SteamVR_WebKit
         float _width;
         float _alpha;
 
+        const float rad2deg = (float)(180 / Math.PI);
+        const float deg2rad = (float)(1.0 / rad2deg);
+
         AttachmentType _attachmentType = AttachmentType.Absolute;
         string _attachedTo = null;
         ulong _attachedToHandle = 0;
         Vector3 _position = Vector3.Zero;
-        Quaternion _rotation = Quaternion.Identity;
+        Vector3 _rotation = Vector3.Zero;
 
         public bool AttachmentSuccess { get { return _sentAttachmentSuccess; } }
 
@@ -136,15 +139,15 @@ namespace SteamVR_WebKit
             SteamVR_WebKit.OverlayManager.SetOverlayAutoCurveDistanceRangeInMeters(_handle, minDistance, maxDistance);
         }
 
-        public void Rotate(double pitch, double yaw, double roll)
+        public void Rotate(double x, double y, double z)
         {
-            _rotation *= Quaternion.FromEulerAngles((float)pitch, (float)yaw, (float)roll);
+            _rotation = new Vector3((float)x, (float)y, (float)z);
             SetAttachment(_attachmentType, _position, _rotation, null);
         }
 
-        public void SetRotation(double pitch, double yaw, double roll)
+        public void SetRotation(double x, double y, double z)
         {
-            _rotation = Quaternion.FromEulerAngles((float)pitch, (float)yaw, (float)roll);
+            _rotation = new Vector3((float)x, (float)y, (float)z);
             SetAttachment(_attachmentType, _position, _rotation, null);
         }
 
@@ -168,7 +171,7 @@ namespace SteamVR_WebKit
             return TransformUtils.OpenVRMatrixToOpenTKMatrix(outMatrix);
         }
 
-        public void SetAttachment(AttachmentType attachmentType, Vector3 position, Quaternion rotation, string attachmentKey = null)
+        public void SetAttachment(AttachmentType attachmentType, Vector3 position, Vector3 rotation, string attachmentKey = null)
         {
             if (!_ingame)
                 throw new Exception("Cannot set attachment for dashboard overlay");
@@ -226,21 +229,21 @@ namespace SteamVR_WebKit
             }
         }
 
-        HmdMatrix34_t GetMatrixFromPositionAndRotation(Vector3 position, Quaternion rotation)
+        HmdMatrix34_t GetMatrixFromPositionAndRotation(Vector3 position, Vector3 rotation)
         {
             Matrix3x4 translationMatrix = Matrix3x4.CreateTranslation(position);
-            Matrix3x4 rotationMatrix = Matrix3x4.CreateFromQuaternion(rotation);
+            Matrix3x4 rotationMatrix = Matrix3x4.CreateFromQuaternion(Quaternion.FromEulerAngles(rotation * deg2rad));
 
             return TransformUtils.OpenTKMatrixToOpenVRMatrix(translationMatrix * rotationMatrix);
         }
 
         [Obsolete("Use SetAttachment instead")]
-        public void SetDeviceAttachment(AttachmentType attachmentType, Vector3 position, Quaternion rotation)
+        public void SetDeviceAttachment(AttachmentType attachmentType, Vector3 position, Vector3 rotation)
         {
             SetAttachment(attachmentType, position, rotation);
         }
 
-        public void SetDeviceAttachment(uint index, Vector3 position, Quaternion rotation)
+        public void SetDeviceAttachment(uint index, Vector3 position, Vector3 rotation)
         {
             if (!_ingame)
                 throw new Exception("Cannot set attachment for dashboard overlay");
