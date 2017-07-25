@@ -11,6 +11,7 @@ namespace SteamVR_WebKit
         Hmd,
         LeftController,
         RightController,
-        Absolute
+        Absolute,
+        Overlay
     }
 }

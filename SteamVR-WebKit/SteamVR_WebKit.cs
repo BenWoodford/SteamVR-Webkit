@@ -205,10 +205,7 @@ namespace SteamVR_WebKit
 
         public static void Log(string message)
         {
-            if(LogEvent != null)
-            {
-                LogEvent(message);
-            }
+            LogEvent?.Invoke(message);
         }
         
         #region Event callbacks

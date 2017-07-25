@@ -39,22 +39,26 @@ namespace SteamVR_WebKit_Test
             basicOverlay.DashboardOverlay.SetThumbnail("Resources/webkit-logo.png");
             basicOverlay.BrowserPreInit += Overlay_BrowserPreInit;
             basicOverlay.BrowserReady += Overlay_BrowserReady;
-            basicOverlay.StartBrowser();
+            basicOverlay.StartBrowser();*/
+
+            //SteamVR_WebKit.SteamVR_WebKit.TraceLevel = true;
 
             videoOverlay = new WebKitOverlay(new Uri("https://www.youtube.com/embed/d7Co9PyueSk"), 1920, 1080, "videoTest", "Video", OverlayType.Both);
-            videoOverlay.InGameOverlay.SetDeviceAttachment(AttachmentType.Absolute, new Vector3(0f, 1.0f, -1f), Quaternion.FromEulerAngles(0f, 45f, 0f));
-            videoOverlay.InGameOverlay.Width = 0.5f;
+            videoOverlay.InGameOverlay.SetAttachment(AttachmentType.Absolute, new Vector3(2f, 3f, 4f), Quaternion.FromEulerAngles(45f, 90f, 12f), "system.vrdashboard");
+            videoOverlay.InGameOverlay.Width = 3f;
             videoOverlay.BrowserPreInit += VideoOverlay_BrowserPreInit;
             videoOverlay.BrowserReady += VideoOverlay_BrowserReady;
             videoOverlay.DashboardOverlay.Width = 2.0f;
-            videoOverlay.StartBrowser();*/
+            videoOverlay.StartBrowser();
 
-            applicationsOverlay = new WebKitOverlay(new Uri("file://" + Environment.CurrentDirectory + "/Resources/applications.html"), 1024, 1024, "webkitTestApps", "WebKit-Apps", OverlayType.Dashboard);
+
+
+            /*applicationsOverlay = new WebKitOverlay(new Uri("file://" + Environment.CurrentDirectory + "/Resources/applications.html"), 1024, 1024, "webkitTestApps", "WebKit-Apps", OverlayType.Dashboard);
             applicationsOverlay.DashboardOverlay.Width = 2.0f;
             applicationsOverlay.DashboardOverlay.SetThumbnail("Resources/webkit-logo.png");
             applicationsOverlay.BrowserPreInit += ApplicationsOverlay_BrowserPreInit;
             applicationsOverlay.BrowserReady += ApplicationsOverlay_BrowserReady;
-            applicationsOverlay.StartBrowser();
+            applicationsOverlay.StartBrowser();*/
 
             //controllerOverlay = new WebKitOverlay(new Uri("https://www.youtube.com/embed/XOn5ckvIF3U?autoplay=1&start=27"), 550, 250, "controllerTest", "controllerVideo", OverlayType.InGame);
             //controllerOverlay.InGameOverlay.SetDeviceAttachment(AttachmentType.RightController, new Vector3(0.0f, 0.0f, -0.1f), Quaternion.FromEulerAngles(0.0f, 0.0f, 1.35f));
@@ -88,7 +92,7 @@ namespace SteamVR_WebKit_Test
 
         private static void VideoOverlay_BrowserReady(object sender, EventArgs e)
         {
-            //videoOverlay.Browser.GetBrowser().GetHost().ShowDevTools();
+            videoOverlay.Browser.GetBrowser().GetHost().ShowDevTools();
         }
 
         private static void VideoOverlay_BrowserPreInit(object sender, EventArgs e)

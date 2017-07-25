@@ -19,6 +19,8 @@ namespace SteamVR_WebKit
         float _alpha;
 
         AttachmentType _attachmentType = AttachmentType.Absolute;
+        string _attachedTo = null;
+        ulong _attachedToHandle = 0;
         Vector3 _position = Vector3.Zero;
         Quaternion _rotation = Quaternion.Identity;
 
@@ -49,6 +51,11 @@ namespace SteamVR_WebKit
         public ulong ThumbnailHandle
         {
             get { return _thumbnailHandle; }
+        }
+
+        public ulong AttachmentHandle
+        {
+            get { return _attachedToHandle; }
         }
 
         public float Width
@@ -132,50 +139,105 @@ namespace SteamVR_WebKit
         public void Rotate(double pitch, double yaw, double roll)
         {
             _rotation *= Quaternion.FromEulerAngles((float)pitch, (float)yaw, (float)roll);
-            SetDeviceAttachment(_attachmentType, _position, _rotation);
+            SetAttachment(_attachmentType, _position, _rotation, null);
+        }
+
+        public void SetRotation(double pitch, double yaw, double roll)
+        {
+            _rotation = Quaternion.FromEulerAngles((float)pitch, (float)yaw, (float)roll);
+            SetAttachment(_attachmentType, _position, _rotation, null);
         }
 
         public void MoveBy(double x, double y, double z)
         {
             _position += new Vector3((float)x, (float)y, (float)z);
-            SetDeviceAttachment(_attachmentType, _position, _rotation);
+            SetAttachment(_attachmentType, _position, _rotation, null);
         }
 
         public void MoveAbsolute(double x, double y, double z)
         {
             _position = new Vector3((float)x, (float)y, (float)z);
-            SetDeviceAttachment(_attachmentType, _position, _rotation);
+            SetAttachment(_attachmentType, _position, _rotation, null);
         }
 
-        public void SetDeviceAttachment(AttachmentType attachmentType, Vector3 position, Quaternion rotation)
+        public Matrix3x4 GetAttachmentTransform()
+        {
+            Valve.VR.HmdMatrix34_t outMatrix = default(Valve.VR.HmdMatrix34_t);
+            SteamVR_WebKit.OverlayManager.GetOverlayTransformOverlayRelative(Handle, ref _attachedToHandle, ref outMatrix);
+
+            return TransformUtils.OpenVRMatrixToOpenTKMatrix(outMatrix);
+        }
+
+        public void SetAttachment(AttachmentType attachmentType, Vector3 position, Quaternion rotation, string attachmentKey = null)
         {
             if (!_ingame)
                 throw new Exception("Cannot set attachment for dashboard overlay");
 
-            if(attachmentType == AttachmentType.Absolute)
+            _attachmentType = attachmentType;
+
+            _position = position;
+            _rotation = rotation;
+
+            if (attachmentType == AttachmentType.Absolute)
             {
-                _position = position;
-                _rotation = rotation;
-                Matrix3x4 translationMatrix = Matrix3x4.CreateTranslation(position);
-                Matrix3x4 rotationMatrix = Matrix3x4.CreateFromQuaternion(rotation);
-
-                HmdMatrix34_t matrix = TransformUtils.OpenTKMatrixToOpenVRMatrix(translationMatrix * rotationMatrix);
-
+                HmdMatrix34_t matrix = GetMatrixFromPositionAndRotation(position, rotation);
                 SteamVR_WebKit.OverlayManager.SetOverlayTransformAbsolute(_handle, ETrackingUniverseOrigin.TrackingUniverseStanding, ref matrix);
-            } else if(attachmentType == AttachmentType.Hmd)
+                _sentAttachmentSuccess = true;
+            }
+            else if (attachmentType == AttachmentType.Hmd)
             {
                 SetDeviceAttachment((uint)0, position, rotation);
-            } else
+                _sentAttachmentSuccess = true;
+            } else if(attachmentType == AttachmentType.Overlay)
             {
-                _attachmentType = attachmentType;
+                ulong attachmentHandle = 0;
+
+                if (attachmentType == AttachmentType.Overlay && attachmentKey == null)
+                    attachmentKey = _attachedTo;
+
+                if(_attachedTo != attachmentKey)
+                {
+                    SteamVR_WebKit.OverlayManager.FindOverlay(attachmentKey, ref attachmentHandle);
+                    _attachedToHandle = attachmentHandle;
+                }
+
+                if (_attachedToHandle != 0)
+                {
+                    HmdMatrix34_t matrix = GetMatrixFromPositionAndRotation(position, rotation);
+                    SteamVR_WebKit.OverlayManager.SetOverlayTransformOverlayRelative(_handle, _attachedToHandle, ref matrix);
+                    _sentAttachmentSuccess = true;
+                } else
+                {
+                    SteamVR_WebKit.Log("Attempted to attach to " + attachmentKey + " but it could not be found.");
+                }
+            }
+            else
+            {
                 SetDeviceAttachment(SteamVR_WebKit.OVRSystem.GetTrackedDeviceIndexForControllerRole(attachmentType == AttachmentType.LeftController ? ETrackedControllerRole.LeftHand : ETrackedControllerRole.RightHand), position, rotation);
                 if (!_controllerListenersSetup)
                 {
                     SteamVR_Event.Listen("TrackedDeviceRoleChanged", HandleDeviceChange);
                     SteamVR_Event.Listen("device_connected", HandleDeviceChange);
                     _controllerListenersSetup = true;
+                } else
+                {
+                    _sentAttachmentSuccess = true;
                 }
             }
+        }
+
+        HmdMatrix34_t GetMatrixFromPositionAndRotation(Vector3 position, Quaternion rotation)
+        {
+            Matrix3x4 translationMatrix = Matrix3x4.CreateTranslation(position);
+            Matrix3x4 rotationMatrix = Matrix3x4.CreateFromQuaternion(rotation);
+
+            return TransformUtils.OpenTKMatrixToOpenVRMatrix(translationMatrix * rotationMatrix);
+        }
+
+        [Obsolete("Use SetAttachment instead")]
+        public void SetDeviceAttachment(AttachmentType attachmentType, Vector3 position, Quaternion rotation)
+        {
+            SetAttachment(attachmentType, position, rotation);
         }
 
         public void SetDeviceAttachment(uint index, Vector3 position, Quaternion rotation)
@@ -186,10 +248,7 @@ namespace SteamVR_WebKit
             _position = position;
             _rotation = rotation;
 
-            Matrix3x4 translationMatrix = Matrix3x4.CreateTranslation(position);
-            Matrix3x4 rotationMatrix = Matrix3x4.CreateFromQuaternion(rotation);
-
-            HmdMatrix34_t matrix = TransformUtils.OpenTKMatrixToOpenVRMatrix(translationMatrix * rotationMatrix);
+            HmdMatrix34_t matrix = GetMatrixFromPositionAndRotation(position, rotation);
 
             SteamVR_WebKit.OverlayManager.SetOverlayTransformTrackedDeviceRelative(_handle, index, ref matrix);
         }
@@ -207,7 +266,7 @@ namespace SteamVR_WebKit
                     SetDeviceAttachment(changedDeviceIndex, _position, _rotation);
                     if (!_sentAttachmentSuccess)
                     {
-                        if (OnAttachmentSuccess != null) OnAttachmentSuccess();
+                        OnAttachmentSuccess?.Invoke();
                         _sentAttachmentSuccess = true;
                     }
                 }
