@@ -97,7 +97,7 @@ namespace SteamVR_WebKit_Test
 
         private static void VideoOverlay_BrowserPreInit(object sender, EventArgs e)
         {
-            videoOverlay.Browser.RegisterJsObject("overlay", videoOverlay);
+            //videoOverlay.Browser.RegisterJsObject("overlay", videoOverlay);
         }
 
         private static void ControllerOverlay_BrowserReady(object sender, EventArgs e)
@@ -112,7 +112,7 @@ namespace SteamVR_WebKit_Test
 
         private static void Overlay_BrowserReady(object sender, EventArgs e)
         {
-            //basicOverlay.Browser.GetBrowser().GetHost().ShowDevTools();
+            basicOverlay.Browser.GetBrowser().GetHost().ShowDevTools();
         }
 
         private static void Browser_ConsoleMessage(object sender, CefSharp.ConsoleMessageEventArgs e)

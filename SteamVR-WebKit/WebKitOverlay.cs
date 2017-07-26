@@ -32,6 +32,8 @@ namespace SteamVR_WebKit
         VREvent_t ovrEvent;
         BrowserSettings _browserSettings;
         bool _renderInGameOverlay;
+        VREvent_t eventData = new VREvent_t();
+
         public OverlayMessageHandler MessageHandler { get; }
 
         bool _browserDidUpdate;
@@ -180,11 +182,39 @@ namespace SteamVR_WebKit
         {
             if (IsKeyboardElement(node) && EnableKeyboard)
             {
+                if (SteamVR_WebKit.ActiveKeyboardOverlay == this)
+                    return;
+
                 SteamVR_WebKit.OverlayManager.HideKeyboard();
                 SteamVR_WebKit.ActiveKeyboardOverlay = null;
 
-                if (CanDoUpdates() && SteamVR_WebKit.OverlayManager.ShowKeyboard(0, 0, "", 256, GetNodeValue(node), true, 0) == EVROverlayError.None)
-                    SteamVR_WebKit.ActiveKeyboardOverlay = this;
+                if (CanDoUpdates())
+                {
+
+                    EVROverlayError err = EVROverlayError.None;
+
+                    if (DashboardOverlay == null && InGameOverlay != null)
+                    {
+                        err = SteamVR_WebKit.OverlayManager.ShowKeyboardForOverlay(InGameOverlay.Handle, 0, 0, "", 256, GetNodeValue(node), true, 0);
+                        SteamVR_WebKit.OverlayManager.SetKeyboardPositionForOverlay(InGameOverlay.Handle, new HmdRect2_t() { vTopLeft = new HmdVector2_t() { v0 = 0, v1 = _windowHeight }, vBottomRight = new HmdVector2_t() { v0 = _windowWidth, v1 = 0 } });
+                    }
+                    else if (DashboardOverlay != null && InGameOverlay == null)
+                    {
+                        err = SteamVR_WebKit.OverlayManager.ShowKeyboardForOverlay(DashboardOverlay.Handle, 0, 0, "", 256, GetNodeValue(node), true, 0);
+                        SteamVR_WebKit.OverlayManager.SetKeyboardPositionForOverlay(DashboardOverlay.Handle, new HmdRect2_t() { vTopLeft = new HmdVector2_t() { v0 = 0, v1 = _windowHeight }, vBottomRight = new HmdVector2_t() { v0 = _windowWidth, v1 = 0 } });
+                    }
+                    else if (DashboardOverlay != null && InGameOverlay != null)
+                    {
+                        // Maybe use last interacted?
+                    }
+                    else
+                    {
+                        err = SteamVR_WebKit.OverlayManager.ShowKeyboard(0, 0, "", 256, GetNodeValue(node), true, 0);
+                    }
+
+                    if (err == EVROverlayError.None)
+                        SteamVR_WebKit.ActiveKeyboardOverlay = this;
+                }
             } else
             {
                 if(SteamVR_WebKit.ActiveKeyboardOverlay == this)
@@ -224,6 +254,18 @@ namespace SteamVR_WebKit
                 return "";
 
             return null;
+        }
+        public void KeyboardInput(byte[] characters)
+        {
+            int len = 0;
+            for (; characters[len] != 0 && len < 7; len++) ;
+            string input = System.Text.Encoding.UTF8.GetString(characters, 0, len);
+           
+            KeyEvent ev = KeyboardUtils.ConvertCharToVirtualKeyEvent(input.ToCharArray()[0]);
+            ev.FocusOnEditableField = false;
+            ev.IsSystemKey = false;
+
+            Browser.GetBrowser().GetHost().SendKeyEvent(ev);
         }
 
         public void ToggleAudio()
@@ -307,10 +349,6 @@ namespace SteamVR_WebKit
 
             //If while we waited any JS commands were queued, then run those now
             ExecQueuedJS();
-        }
-
-        public void KeyboardInput(char[] characters)
-        {
         }
 
         private void _browser_BrowserInitialized(object sender, EventArgs e)
@@ -430,29 +468,6 @@ namespace SteamVR_WebKit
             }
         }
 
-        public virtual void HandleEvent()
-        {
-            switch((EVREventType)ovrEvent.eventType)
-            {
-                case EVREventType.VREvent_MouseMove:
-                    HandleMouseMoveEvent(ovrEvent);
-                    break;
-
-                case EVREventType.VREvent_MouseButtonDown:
-                    HandleMouseButtonDownEvent(ovrEvent);
-                    break;
-
-                case EVREventType.VREvent_MouseButtonUp:
-                    HandleMouseButtonUpEvent(ovrEvent);
-                    break;
-                    
-                case EVREventType.VREvent_Scroll:
-                    if(_allowScrolling)
-                        HandleMouseScrollEvent(ovrEvent);
-                    break;
-            }
-        }
-
         MouseButtonType GetMouseButtonType(uint button)
         {
             switch ((EVRMouseButton)button)
@@ -538,6 +553,26 @@ namespace SteamVR_WebKit
 
             // Mouse inputs are for dashboards only right now.
 
+            if (InGameOverlay != null)
+            {
+                while (InGameOverlay.PollEvent(ref eventData))
+                {
+                    EVREventType type = (EVREventType)eventData.eventType;
+
+                    HandleEvent(type, eventData);
+                }
+            }
+
+            if (DashboardOverlay != null)
+            {
+                while (DashboardOverlay.PollEvent(ref eventData))
+                {
+                    EVREventType type = (EVREventType)eventData.eventType;
+
+                    HandleEvent(type, eventData);
+                }
+            }
+
             if ((!EnableNonDashboardInput || InGameOverlay == null) && DashboardOverlay != null && !DashboardOverlay.IsVisible())
             {
                 if (_wasVisible)
@@ -550,26 +585,51 @@ namespace SteamVR_WebKit
 
             _wasVisible = true;
 
-            // We'll handle mouse events here eventually.
-
-            if (DashboardOverlay != null)
-            {
-                while (DashboardOverlay.PollEvent(ref ovrEvent))
-                {
-                    HandleEvent();
-                }
-            }
-
-            if(EnableNonDashboardInput && InGameOverlay != null)
-            {
-                while(InGameOverlay.PollEvent(ref ovrEvent))
-                {
-                    HandleEvent();
-                }
-            }
-
             PostUpdateCallback?.Invoke(this, new EventArgs());
         }
+
+        void HandleEvent(EVREventType type, VREvent_t eventData)
+        {
+            switch(type)
+            {
+                case EVREventType.VREvent_KeyboardCharInput:
+                    KeyboardInput(new byte[] {
+                        eventData.data.keyboard.cNewInput0,
+                        eventData.data.keyboard.cNewInput1,
+                        eventData.data.keyboard.cNewInput2,
+                        eventData.data.keyboard.cNewInput3,
+                        eventData.data.keyboard.cNewInput4,
+                        eventData.data.keyboard.cNewInput5,
+                        eventData.data.keyboard.cNewInput6,
+                        eventData.data.keyboard.cNewInput7,
+                    });
+                    break;
+
+                case EVREventType.VREvent_KeyboardDone:
+                    StringBuilder text = new StringBuilder();
+                    SteamVR_WebKit.OverlayManager.GetKeyboardText(text, 1024);
+                    //KeyboardInput(text.ToString().ToCharArray());
+                    break;
+
+                case EVREventType.VREvent_MouseMove:
+                    HandleMouseMoveEvent(eventData);
+                    break;
+
+                case EVREventType.VREvent_MouseButtonDown:
+                    HandleMouseButtonDownEvent(eventData);
+                    break;
+
+                case EVREventType.VREvent_MouseButtonUp:
+                    HandleMouseButtonUpEvent(eventData);
+                    break;
+
+                case EVREventType.VREvent_Scroll:
+                    if (_allowScrolling)
+                        HandleMouseScrollEvent(eventData);
+                    break;
+            }
+        }
+
 
         public virtual void Draw()
         {

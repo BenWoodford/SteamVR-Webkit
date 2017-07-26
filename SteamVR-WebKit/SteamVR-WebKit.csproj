@@ -66,6 +66,7 @@
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xaml" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
@@ -79,6 +80,7 @@
     <Compile Include="Extensions\COpenVRContext.cs" />
     <Compile Include="JsInterop\Applications.cs" />
     <Compile Include="JsInterop\Notifications.cs" />
+    <Compile Include="KeyboardUtils.cs" />
     <Compile Include="openvr.cs" />
     <Compile Include="Overlay.cs" />
     <Compile Include="OverlayType.cs" />

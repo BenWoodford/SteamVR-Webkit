@@ -195,7 +195,6 @@ namespace SteamVR_WebKit
                 {
                     overlay.Update();
                 }
-
                 while (OpenVR.System.PollNextEvent(ref eventData, vrEventSize))
                 {
                     SteamVR_Event.Send(((EVREventType)eventData.eventType).ToString().Replace("VREvent_", ""), eventData);
@@ -268,15 +267,15 @@ namespace SteamVR_WebKit
         {
             SteamVR_WebKit.Log("Keyboard Input: " + ((char)((VREvent_t)args[0]).data.keyboard.cNewInput0));
 
-            char[] characters = new char[8] {
-                (char)((VREvent_t)args[0]).data.keyboard.cNewInput0,
-                (char)((VREvent_t)args[0]).data.keyboard.cNewInput1,
-                (char)((VREvent_t)args[0]).data.keyboard.cNewInput2,
-                (char)((VREvent_t)args[0]).data.keyboard.cNewInput3,
-                (char)((VREvent_t)args[0]).data.keyboard.cNewInput4,
-                (char)((VREvent_t)args[0]).data.keyboard.cNewInput5,
-                (char)((VREvent_t)args[0]).data.keyboard.cNewInput6,
-                (char)((VREvent_t)args[0]).data.keyboard.cNewInput7,
+            byte[] characters = new byte[8] {
+                ((VREvent_t)args[0]).data.keyboard.cNewInput0,
+                ((VREvent_t)args[0]).data.keyboard.cNewInput1,
+                ((VREvent_t)args[0]).data.keyboard.cNewInput2,
+                ((VREvent_t)args[0]).data.keyboard.cNewInput3,
+                ((VREvent_t)args[0]).data.keyboard.cNewInput4,
+                ((VREvent_t)args[0]).data.keyboard.cNewInput5,
+                ((VREvent_t)args[0]).data.keyboard.cNewInput6,
+                ((VREvent_t)args[0]).data.keyboard.cNewInput7,
             };
 
             if(SteamVR_WebKit.ActiveKeyboardOverlay != null)
