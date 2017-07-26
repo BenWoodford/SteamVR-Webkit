@@ -32,6 +32,7 @@ namespace SteamVR_WebKit
         VREvent_t ovrEvent;
         BrowserSettings _browserSettings;
         bool _renderInGameOverlay;
+        public OverlayMessageHandler MessageHandler { get; }
 
         bool _browserDidUpdate;
 
@@ -58,6 +59,12 @@ namespace SteamVR_WebKit
         public event EventHandler PreDrawCallback;
         public event EventHandler PostDrawCallback;
 
+        public delegate void OnFocusedNodeChanged(IWebBrowser browserControl, IBrowser browser, IFrame frame, IDomNode node);
+        public delegate void OnContextCreated(IWebBrowser browserControl, IBrowser browser, IFrame frame);
+
+        public event OnFocusedNodeChanged FocusedNodeChanged;
+        public event OnContextCreated ContextCreated;
+
         public Uri Uri
         {
             get { return _uri; }
@@ -82,6 +89,8 @@ namespace SteamVR_WebKit
         {
             get { return _glTextureId; }
         }
+
+        public bool EnableKeyboard { get; set; }
 
         public BrowserSettings BrowserSettings
         {
@@ -140,6 +149,8 @@ namespace SteamVR_WebKit
             if (!SteamVR_WebKit.Initialised)
                 SteamVR_WebKit.Init();
 
+            MessageHandler = new OverlayMessageHandler(this);
+
             _browserSettings = new BrowserSettings();
             _browserSettings.WindowlessFrameRate = 30;
             _uri = uri;
@@ -160,7 +171,59 @@ namespace SteamVR_WebKit
 
             SteamVR_WebKit.Overlays.Add(this);
 
+            FocusedNodeChanged += WebKitOverlay_FocusedNodeChanged;
+
             SetupTextures();
+        }
+
+        private void WebKitOverlay_FocusedNodeChanged(IWebBrowser browserControl, IBrowser browser, IFrame frame, IDomNode node)
+        {
+            if (IsKeyboardElement(node) && EnableKeyboard)
+            {
+                SteamVR_WebKit.OverlayManager.HideKeyboard();
+                SteamVR_WebKit.ActiveKeyboardOverlay = null;
+
+                if (CanDoUpdates() && SteamVR_WebKit.OverlayManager.ShowKeyboard(0, 0, "", 256, GetNodeValue(node), true, 0) == EVROverlayError.None)
+                    SteamVR_WebKit.ActiveKeyboardOverlay = this;
+            } else
+            {
+                if(SteamVR_WebKit.ActiveKeyboardOverlay == this)
+                {
+                    SteamVR_WebKit.OverlayManager.HideKeyboard();
+                    SteamVR_WebKit.ActiveKeyboardOverlay = null;
+                }
+            }
+        }
+
+        bool IsKeyboardElement(IDomNode node)
+        {
+            if (node == null)
+                return false;
+
+            if (node.TagName.ToLower() == "input")
+            {
+                if (!node.HasAttribute("type") || node.HasAttribute("type") && (node["type"] != "checkbox" && node["type"] != "radio"))
+                    return true;
+                else
+                    return false;
+            }
+            else if (node.TagName.ToLower() == "textarea")
+                return true;
+
+            return false;
+        }
+
+        string GetNodeValue(IDomNode node)
+        {
+            if (node == null)
+                return null;
+
+            if (node.TagName.ToLower() == "input")
+                return node.HasAttribute("value") ? node["value"] : "";
+            else if (node.TagName.ToLower() == "textarea")
+                return "";
+
+            return null;
         }
 
         public void ToggleAudio()
@@ -219,6 +282,7 @@ namespace SteamVR_WebKit
             using (RequestContext context = new RequestContext(reqSettings))
             {
                 _browser = new ChromiumWebBrowser(Uri.ToString(), _browserSettings, context, false);
+                Browser.RenderProcessMessageHandler = MessageHandler;
                 BrowserPreInit?.Invoke(_browser, new EventArgs());
                 _browser.Size = new Size((int)_windowWidth, (int)_windowHeight);
                 _browser.NewScreenshot += Browser_NewScreenshot;
@@ -243,6 +307,10 @@ namespace SteamVR_WebKit
 
             //If while we waited any JS commands were queued, then run those now
             ExecQueuedJS();
+        }
+
+        public void KeyboardInput(char[] characters)
+        {
         }
 
         private void _browser_BrowserInitialized(object sender, EventArgs e)
@@ -548,6 +616,30 @@ namespace SteamVR_WebKit
             {
                 ExecAsyncJS(jsCmd);
                 JSCommandQueue.Dequeue();
+            }
+        }
+
+        public class OverlayMessageHandler : IRenderProcessMessageHandler
+        {
+            WebKitOverlay _parent;
+            public bool DebugMode = false;
+
+            public OverlayMessageHandler(WebKitOverlay parent)
+            {
+                _parent = parent;
+            }
+
+            void IRenderProcessMessageHandler.OnContextCreated(IWebBrowser browserControl, IBrowser browser, IFrame frame)
+            {
+                _parent.ContextCreated?.Invoke(browserControl, browser, frame);
+            }
+
+            void IRenderProcessMessageHandler.OnFocusedNodeChanged(IWebBrowser browserControl, IBrowser browser, IFrame frame, IDomNode node)
+            {
+                if(DebugMode)
+                    SteamVR_WebKit.Log("Node Focus Change: " + (node != null ? node.ToString() : " none"));
+
+                _parent.FocusedNodeChanged?.Invoke(browserControl, browser, frame, node);
             }
         }
     }

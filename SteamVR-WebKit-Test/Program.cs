@@ -27,19 +27,19 @@ namespace SteamVR_WebKit_Test
 
         static void Main(string[] args)
         {
-            SteamVR_WebKit.SteamVR_WebKit.Init();
+            SteamVR_WebKit.SteamVR_WebKit.Init(new CefSharp.CefSettings() { FocusedNodeChangedEnabled = true });
             SteamVR_WebKit.SteamVR_WebKit.FPS = 30;
             SteamVR_WebKit.SteamVR_WebKit.LogEvent += SteamVR_WebKit_LogEvent;
 
             //Notifications.RegisterIcon("default", new Bitmap(Environment.CurrentDirectory + "\\Resources\\alert.png"));
-            /*
-            basicOverlay = new WebKitOverlay(new Uri("file://" + Environment.CurrentDirectory + "/Resources/index.html"), 1024, 1024, "webkitTest", "WebKit-Core", OverlayType.Dashboard);
-            //overlay = new WebKitOverlay(new Uri("https://codepen.io/AtomicNoggin/full/yqwsG/"), 1024, 1024, "webkitTest", "WebKit", OverlayType.Dashboard);
+            basicOverlay = new WebKitOverlay(new Uri("https://google.com"), 1024, 1024, "webkitTest", "WebKit", OverlayType.Dashboard);
             basicOverlay.DashboardOverlay.Width = 2.0f;
             basicOverlay.DashboardOverlay.SetThumbnail("Resources/webkit-logo.png");
             basicOverlay.BrowserPreInit += Overlay_BrowserPreInit;
             basicOverlay.BrowserReady += Overlay_BrowserReady;
-            basicOverlay.StartBrowser();*/
+            basicOverlay.StartBrowser();
+            basicOverlay.EnableKeyboard = true;
+            basicOverlay.MessageHandler.DebugMode = true;
 
             //SteamVR_WebKit.SteamVR_WebKit.TraceLevel = true;
 

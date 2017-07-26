@@ -6,6 +6,7 @@ using Valve.VR;
 using OpenTK.Graphics.OpenGL;
 using System.Threading;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace SteamVR_WebKit
 {
@@ -34,6 +35,8 @@ namespace SteamVR_WebKit
         public static event EventHandler PostDrawCallback;
 
         public static bool TraceLevel = false;
+
+        public static WebKitOverlay ActiveKeyboardOverlay = null;
 
         public static bool Initialised { get { return _initialised; } }
 
@@ -158,6 +161,9 @@ namespace SteamVR_WebKit
             }
             
             SteamVR_Event.Listen("new_poses", OnNewPoses);
+            SteamVR_Event.Listen("KeyboardDone", OnKeyboardDone);
+            SteamVR_Event.Listen("KeyboardCharInput", OnKeyboardCharInput);
+            SteamVR_Event.Listen("KeyboardClosed", OnKeyboardClosed);
         }
         
         private static readonly TrackedDevicePose_t[] _poses = new TrackedDevicePose_t[OpenVR.k_unMaxTrackedDeviceCount];
@@ -174,6 +180,9 @@ namespace SteamVR_WebKit
         public static void RunOverlays()
         {
             Stopwatch fpsWatch = new Stopwatch();
+            VREvent_t eventData = new VREvent_t();
+            uint vrEventSize = (uint)Marshal.SizeOf<VREvent_t>();
+
             while (!_doStop)
             {
                 fpsWatch.Restart();
@@ -185,6 +194,11 @@ namespace SteamVR_WebKit
                 foreach (WebKitOverlay overlay in Overlays)
                 {
                     overlay.Update();
+                }
+
+                while (OpenVR.System.PollNextEvent(ref eventData, vrEventSize))
+                {
+                    SteamVR_Event.Send(((EVREventType)eventData.eventType).ToString().Replace("VREvent_", ""), eventData);
                 }
 
                 PostUpdateCallback?.Invoke(null, null);
@@ -248,6 +262,39 @@ namespace SteamVR_WebKit
                     SteamVR_Event.Send("out_of_range", outOfRange);
                 }
             }
+        }
+
+        private static void OnKeyboardCharInput(params object[] args)
+        {
+            SteamVR_WebKit.Log("Keyboard Input: " + ((char)((VREvent_t)args[0]).data.keyboard.cNewInput0));
+
+            char[] characters = new char[8] {
+                (char)((VREvent_t)args[0]).data.keyboard.cNewInput0,
+                (char)((VREvent_t)args[0]).data.keyboard.cNewInput1,
+                (char)((VREvent_t)args[0]).data.keyboard.cNewInput2,
+                (char)((VREvent_t)args[0]).data.keyboard.cNewInput3,
+                (char)((VREvent_t)args[0]).data.keyboard.cNewInput4,
+                (char)((VREvent_t)args[0]).data.keyboard.cNewInput5,
+                (char)((VREvent_t)args[0]).data.keyboard.cNewInput6,
+                (char)((VREvent_t)args[0]).data.keyboard.cNewInput7,
+            };
+
+            if(SteamVR_WebKit.ActiveKeyboardOverlay != null)
+            {
+                SteamVR_WebKit.ActiveKeyboardOverlay.KeyboardInput(characters);
+            }
+
+            // TODO: Take input and send to overlay
+        }
+
+        private static void OnKeyboardClosed(params object[] args)
+        {
+            SteamVR_WebKit.Log("Keyboard Closed");
+        }
+
+        private static void OnKeyboardDone(params object[] args)
+        {
+            SteamVR_WebKit.Log("Keyboard Done");
         }
         #endregion
     }
