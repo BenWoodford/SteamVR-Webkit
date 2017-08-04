@@ -93,7 +93,6 @@ namespace SteamVR_WebKit
 
             if (settings == null)
                 settings = new CefSettings();
-            AppDomain.CurrentDomain.ProcessExit += CurrentDomain_ProcessExit;
 
             gw = new GameWindow(300, 30); // Invisible GL Context
             GL.Enable(EnableCap.Texture2D);
@@ -103,7 +102,26 @@ namespace SteamVR_WebKit
 
             Cef.Initialize(settings);
 
-            InitOpenVR();
+            bool tryAgain = true;
+
+            while(tryAgain && !_doStop) {
+                try
+                {
+                    InitOpenVR();
+                    tryAgain = false;
+                } catch (Exception e)
+                {
+                    Log(e.Message);
+                    Log("Trying again in 3 seconds");
+                    Thread.Sleep(3000);
+                }
+            }
+
+            if (_doStop)
+            {
+                CefShutdown();
+                return;
+            }
 
             _system = OpenVR.System;
             _compositor = OpenVR.Compositor;
@@ -116,11 +134,6 @@ namespace SteamVR_WebKit
 
             _initialised = true;
 
-        }
-
-        private static void CurrentDomain_ProcessExit(object sender, EventArgs e)
-        {
-            CefShutdown();
         }
 
         public static void CefShutdown()
@@ -214,6 +227,8 @@ namespace SteamVR_WebKit
                 fpsWatch.Stop();
                 Thread.Sleep(fpsWatch.ElapsedMilliseconds >= _frameSleep ? 0 : (int)(_frameSleep - fpsWatch.ElapsedMilliseconds));
             }
+
+            CefShutdown();
         }
 
         public static void Log(string message)
