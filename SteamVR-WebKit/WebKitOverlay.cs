@@ -640,16 +640,19 @@ namespace SteamVR_WebKit
 
             UpdateTexture();
 
-            if (DashboardOverlay != null && DashboardOverlay.IsVisible())
+            if (_browser.Bitmap != null)
             {
-                DashboardOverlay.SetTexture(ref _textureData);
-                DashboardOverlay.Show();
-            }
+                if (DashboardOverlay != null && DashboardOverlay.IsVisible())
+                {
+                    DashboardOverlay.SetTexture(ref _textureData);
+                    DashboardOverlay.Show();
+                }
 
-            if(InGameOverlay != null && InGameOverlay.IsVisible())
-            {
-                InGameOverlay.SetTexture(ref _textureData);
-                InGameOverlay.Show();
+                if (InGameOverlay != null && InGameOverlay.IsVisible())
+                {
+                    InGameOverlay.SetTexture(ref _textureData);
+                    InGameOverlay.Show();
+                }
             }
 
             PostDrawCallback?.Invoke(this, new EventArgs());

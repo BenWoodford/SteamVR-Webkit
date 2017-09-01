@@ -72,7 +72,7 @@ namespace Valve.VR
                     {
                         var label = (i < 2) ? labels[i] : (i - 1).ToString();
                         //ShowObject(obj.transform, "hidden (" + label + ")");
-                        SteamVR_WebKit.SteamVR_WebKit.Log("Controller manager wants to show the " + label + " controller.");
+                        //SteamVR_WebKit.SteamVR_WebKit.Log("Controller manager wants to show the " + label + " controller.");
                     }
                 }
             }
@@ -85,7 +85,7 @@ namespace Valve.VR
                     {
                         var label = (i < 2) ? labels[i] : (i - 1).ToString();
                         //HideObject(obj.transform, "hidden (" + label + ")");
-                        SteamVR_WebKit.SteamVR_WebKit.Log("Controller manager wants to hide the " + label + " controller.");
+                        //SteamVR_WebKit.SteamVR_WebKit.Log("Controller manager wants to hide the " + label + " controller.");
                     }
                 }
             }
@@ -150,7 +150,7 @@ namespace Valve.VR
         // Keep track of assigned roles.
         private void OnTrackedDeviceRoleChanged(params object[] args)
         {
-            SteamVR_WebKit.SteamVR_WebKit.Log("Controller role change detected");
+            //SteamVR_WebKit.SteamVR_WebKit.Log("Controller role change detected");
             Refresh();
         }
 
