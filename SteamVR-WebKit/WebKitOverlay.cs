@@ -704,6 +704,10 @@ namespace SteamVR_WebKit
 
                 _parent.FocusedNodeChanged?.Invoke(browserControl, browser, frame, node);
             }
+
+            public void OnContextReleased(IWebBrowser browserControl, IBrowser browser, IFrame frame)
+            {
+            }
         }
     }
 }
