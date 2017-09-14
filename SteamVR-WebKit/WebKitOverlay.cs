@@ -132,6 +132,8 @@ namespace SteamVR_WebKit
             }
         }
 
+        public List<CefCustomScheme> SchemeHandlers { get; } = new List<CefCustomScheme>();
+
         public ChromiumWebBrowser Browser
         {
             get { return _browser; }
@@ -239,6 +241,8 @@ namespace SteamVR_WebKit
             }
             else if (node.TagName.ToLower() == "textarea")
                 return true;
+            else if (node.HasAttribute("contenteditable"))
+                return true;
 
             return false;
         }
@@ -251,21 +255,28 @@ namespace SteamVR_WebKit
             if (node.TagName.ToLower() == "input")
                 return node.HasAttribute("value") ? node["value"] : "";
             else if (node.TagName.ToLower() == "textarea")
+            {
                 return "";
+            }
 
             return null;
         }
         public void KeyboardInput(byte[] characters)
         {
             int len = 0;
-            for (; characters[len] != 0 && len < 7; len++) ;
-            string input = System.Text.Encoding.UTF8.GetString(characters, 0, len);
-           
-            KeyEvent ev = KeyboardUtils.ConvertCharToVirtualKeyEvent(input.ToCharArray()[0]);
-            ev.FocusOnEditableField = false;
-            ev.IsSystemKey = false;
 
-            Browser.GetBrowser().GetHost().SendKeyEvent(ev);
+            for (int i = 0; i < 8; i++)
+            {
+                if (characters[i] == 0)
+                    continue;
+
+                KeyEvent ev = KeyboardUtils.ConvertCharToVirtualKeyEvent(characters[i]);
+                ev.FocusOnEditableField = false;
+
+                SteamVR_WebKit.Log("[KEY] Key Code: " + ev.WindowsKeyCode + " | Modifiers: " + ev.Modifiers.ToString());
+
+                Browser.GetBrowser().GetHost().SendKeyEvent(ev);
+            }
         }
 
         public void ToggleAudio()
@@ -317,12 +328,20 @@ namespace SteamVR_WebKit
 
         protected virtual async void AsyncBrowser()
         {
-            RequestContextSettings reqSettings = new RequestContextSettings { CachePath = CachePath };
-
-            SteamVR_WebKit.Log("Browser Initialising for " + _overlayKey);
-
-            using (RequestContext context = new RequestContext(reqSettings))
+            RequestContextSettings contextSettings = new RequestContextSettings()
             {
+                CachePath = CachePath
+            };
+
+            using (RequestContext context = new RequestContext(contextSettings))
+            {
+                foreach(CefCustomScheme scheme in SchemeHandlers)
+                {
+                    context.RegisterSchemeHandlerFactory(scheme.SchemeName, scheme.DomainName, scheme.SchemeHandlerFactory);
+                }
+
+                SteamVR_WebKit.Log("Browser Initialising for " + _overlayKey);
+
                 _browser = new ChromiumWebBrowser(Uri.ToString(), _browserSettings, context, false);
                 Browser.RenderProcessMessageHandler = MessageHandler;
                 BrowserPreInit?.Invoke(_browser, new EventArgs());
@@ -606,8 +625,8 @@ namespace SteamVR_WebKit
                     break;
 
                 case EVREventType.VREvent_KeyboardDone:
-                    StringBuilder text = new StringBuilder();
-                    SteamVR_WebKit.OverlayManager.GetKeyboardText(text, 1024);
+                    //StringBuilder text = new StringBuilder();
+                    //SteamVR_WebKit.OverlayManager.GetKeyboardText(text, 1024);
                     //KeyboardInput(text.ToString().ToCharArray());
                     break;
 

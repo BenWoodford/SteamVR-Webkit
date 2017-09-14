@@ -100,7 +100,7 @@ namespace SteamVR_WebKit
             if (Cef.IsInitialized)
                 Cef.Shutdown();
 
-            Cef.Initialize(settings);
+            Cef.Initialize(settings, performDependencyCheck: true, browserProcessHandler: null);
 
             bool tryAgain = true;
 

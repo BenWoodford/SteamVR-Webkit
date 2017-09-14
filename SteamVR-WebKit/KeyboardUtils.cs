@@ -16,19 +16,27 @@ namespace SteamVR_WebKit
         [System.Runtime.InteropServices.DllImport("user32.dll")]
         private static extern short VkKeyScanEx(char ch);
 
-        public static KeyEvent ConvertCharToVirtualKeyEvent(char ch)
+        public static KeyEvent ConvertCharToVirtualKeyEvent(byte character)
         {
+            char actualChar = Encoding.UTF8.GetString(new byte[] { character }, 0, 1).ToCharArray()[0];
+
             KeyEvent retVal = new KeyEvent();
-            if (ch == '\b')
+            if (actualChar == '\b')
             {
                 retVal.WindowsKeyCode = (int)Keys.Back;
                 retVal.Type = KeyEventType.KeyDown;
+                retVal.IsSystemKey = true;
+                return retVal;
+            } else if(actualChar == '\n')
+            {
+                retVal.WindowsKeyCode = (int)Keys.Return;
+                retVal.Type = KeyEventType.Char;
                 return retVal;
             }
             
-            short vkey = VkKeyScan(ch);
+            short vkey = VkKeyScan(actualChar);
 
-            retVal.WindowsKeyCode = (vkey & 0xff);
+            retVal.WindowsKeyCode = character;
             retVal.Type = KeyEventType.Char;
 
             int modifiers = vkey >> 8;

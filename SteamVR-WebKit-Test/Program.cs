@@ -32,7 +32,7 @@ namespace SteamVR_WebKit_Test
             SteamVR_WebKit.SteamVR_WebKit.LogEvent += SteamVR_WebKit_LogEvent;
 
             //Notifications.RegisterIcon("default", new Bitmap(Environment.CurrentDirectory + "\\Resources\\alert.png"));
-            basicOverlay = new WebKitOverlay(new Uri("https://google.com"), 1024, 1024, "webkitTest", "WebKit", OverlayType.Dashboard);
+            basicOverlay = new WebKitOverlay(new Uri("http://www.openfaces.org/demo/inputtextarea/InputTextarea.jsf"), 1024, 1024, "webkitTest", "WebKit", OverlayType.Dashboard);
             basicOverlay.DashboardOverlay.Width = 2.0f;
             basicOverlay.DashboardOverlay.SetThumbnail("Resources/webkit-logo.png");
             basicOverlay.BrowserPreInit += Overlay_BrowserPreInit;
