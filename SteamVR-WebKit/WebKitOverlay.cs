@@ -140,6 +140,9 @@ namespace SteamVR_WebKit
         }
 
         public string CachePath { get { return _cachePath; } set { _cachePath = value; } }
+
+        public IRequestContextHandler RequestContextHandler { get; set; }
+
         public double ZoomLevel { get { return _zoomLevel; } set { _zoomLevel = value; } }
 
         [Obsolete("Please use the newer constructor that lets you define whether to show in dashboard, in-game or both instead.")]
@@ -192,30 +195,7 @@ namespace SteamVR_WebKit
 
                 if (CanDoUpdates())
                 {
-
-                    EVROverlayError err = EVROverlayError.None;
-
-                    if (DashboardOverlay == null && InGameOverlay != null)
-                    {
-                        err = SteamVR_WebKit.OverlayManager.ShowKeyboardForOverlay(InGameOverlay.Handle, 0, 0, "", 256, GetNodeValue(node), true, 0);
-                        SteamVR_WebKit.OverlayManager.SetKeyboardPositionForOverlay(InGameOverlay.Handle, new HmdRect2_t() { vTopLeft = new HmdVector2_t() { v0 = 0, v1 = _windowHeight }, vBottomRight = new HmdVector2_t() { v0 = _windowWidth, v1 = 0 } });
-                    }
-                    else if (DashboardOverlay != null && InGameOverlay == null)
-                    {
-                        err = SteamVR_WebKit.OverlayManager.ShowKeyboardForOverlay(DashboardOverlay.Handle, 0, 0, "", 256, GetNodeValue(node), true, 0);
-                        SteamVR_WebKit.OverlayManager.SetKeyboardPositionForOverlay(DashboardOverlay.Handle, new HmdRect2_t() { vTopLeft = new HmdVector2_t() { v0 = 0, v1 = _windowHeight }, vBottomRight = new HmdVector2_t() { v0 = _windowWidth, v1 = 0 } });
-                    }
-                    else if (DashboardOverlay != null && InGameOverlay != null)
-                    {
-                        // Maybe use last interacted?
-                    }
-                    else
-                    {
-                        err = SteamVR_WebKit.OverlayManager.ShowKeyboard(0, 0, "", 256, GetNodeValue(node), true, 0);
-                    }
-
-                    if (err == EVROverlayError.None)
-                        SteamVR_WebKit.ActiveKeyboardOverlay = this;
+                    ShowKeyboard(GetNodeValue(node));
                 }
             } else
             {
@@ -225,6 +205,40 @@ namespace SteamVR_WebKit
                     SteamVR_WebKit.ActiveKeyboardOverlay = null;
                 }
             }
+        }
+
+        public void ShowKeyboard(string value = "")
+        {
+            EVROverlayError err = EVROverlayError.None;
+
+            if (DashboardOverlay == null && InGameOverlay != null)
+            {
+                err = SteamVR_WebKit.OverlayManager.ShowKeyboardForOverlay(InGameOverlay.Handle, 0, 0, "", 256, value, true, 0);
+                SteamVR_WebKit.OverlayManager.SetKeyboardPositionForOverlay(InGameOverlay.Handle, new HmdRect2_t() { vTopLeft = new HmdVector2_t() { v0 = 0, v1 = _windowHeight }, vBottomRight = new HmdVector2_t() { v0 = _windowWidth, v1 = 0 } });
+            }
+            else if (DashboardOverlay != null && InGameOverlay == null)
+            {
+                err = SteamVR_WebKit.OverlayManager.ShowKeyboardForOverlay(DashboardOverlay.Handle, 0, 0, "", 256, value, true, 0);
+                SteamVR_WebKit.OverlayManager.SetKeyboardPositionForOverlay(DashboardOverlay.Handle, new HmdRect2_t() { vTopLeft = new HmdVector2_t() { v0 = 0, v1 = _windowHeight }, vBottomRight = new HmdVector2_t() { v0 = _windowWidth, v1 = 0 } });
+            }
+            else if (DashboardOverlay != null && InGameOverlay != null)
+            {
+                // Maybe use last interacted?
+            }
+            else
+            {
+                err = SteamVR_WebKit.OverlayManager.ShowKeyboard(0, 0, "", 256,value, true, 0);
+            }
+
+            if (err == EVROverlayError.None)
+                SteamVR_WebKit.ActiveKeyboardOverlay = this;
+
+        }
+
+        public void HideKeyboard()
+        {
+            SteamVR_WebKit.OverlayManager.HideKeyboard();
+            SteamVR_WebKit.ActiveKeyboardOverlay = null;
         }
 
         bool IsKeyboardElement(IDomNode node)
@@ -330,10 +344,10 @@ namespace SteamVR_WebKit
         {
             RequestContextSettings contextSettings = new RequestContextSettings()
             {
-                CachePath = CachePath
+                CachePath = CachePath,
             };
 
-            using (RequestContext context = new RequestContext(contextSettings))
+            using (RequestContext context = new RequestContext(contextSettings, RequestContextHandler))
             {
                 foreach(CefCustomScheme scheme in SchemeHandlers)
                 {
