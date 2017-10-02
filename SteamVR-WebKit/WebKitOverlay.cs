@@ -33,6 +33,8 @@ namespace SteamVR_WebKit
         BrowserSettings _browserSettings;
         bool _renderInGameOverlay;
         VREvent_t eventData = new VREvent_t();
+        OpenTK.Vector2 mouseClickPosition;
+        bool brokeFromJitterThreshold = false;
 
         public OverlayMessageHandler MessageHandler { get; }
 
@@ -66,6 +68,11 @@ namespace SteamVR_WebKit
 
         public event OnFocusedNodeChanged FocusedNodeChanged;
         public event OnContextCreated ContextCreated;
+
+        /// <summary>
+        /// Amount of pixels the pointer may move away from where you click+hold before a move is registered. Mostly there because 
+        /// </summary>
+        public int MouseDeltaTolerance { get; set; }
 
         public Uri Uri
         {
@@ -520,7 +527,20 @@ namespace SteamVR_WebKit
         void HandleMouseMoveEvent(VREvent_t ev)
         {
             //_browser.GetBrowser().GetHost().SendMouseMoveEvent((int)(_windowWidth * ev.data.mouse.x), (int)(_windowHeight * (1f - ev.data.mouse.y)), false, CefEventFlags.None);
+            if(_isHolding && !brokeFromJitterThreshold)
+            {
+                if ((mouseClickPosition - new OpenTK.Vector2(ev.data.mouse.x, ev.data.mouse.y)).Length >= MouseDeltaTolerance)
+                    brokeFromJitterThreshold = true;
+                else
+                    return;
+            }
+
             _browser.GetBrowser().GetHost().SendMouseMoveEvent((int)ev.data.mouse.x, _windowHeight - (int)ev.data.mouse.y, false, _isHolding ? CefEventFlags.LeftMouseButton : CefEventFlags.None);
+
+            if (SteamVR_WebKit.TraceLevel)
+            {
+                //SteamVR_WebKit.Log("[WEBKIT] Mouse Move Event Fired at " + ev.data.mouse.x + "," + ev.data.mouse.y);
+            }
         }
 
         void HandleMouseButtonDownEvent(VREvent_t ev)
@@ -533,6 +553,13 @@ namespace SteamVR_WebKit
             if((EVRMouseButton)ev.data.mouse.button == EVRMouseButton.Left)
             {
                 _isHolding = true;
+                brokeFromJitterThreshold = false;
+                mouseClickPosition = new OpenTK.Vector2(ev.data.mouse.x, ev.data.mouse.y);
+
+                if (SteamVR_WebKit.TraceLevel)
+                {
+                    SteamVR_WebKit.Log("[WEBKIT] Mouse Down Event Fired at " + ev.data.mouse.x + "," + ev.data.mouse.y);
+                }
             }
         }
 
@@ -541,11 +568,33 @@ namespace SteamVR_WebKit
             if (ev.data.mouse.button != (uint)EVRMouseButton.Left)
                 return;
 
-            _browser.GetBrowser().GetHost().SendMouseClickEvent((int)ev.data.mouse.x, _windowHeight - (int)ev.data.mouse.y, GetMouseButtonType(ev.data.mouse.button), true, 1, CefEventFlags.None);
+            int xToSend = (int)ev.data.mouse.x;
+            int yToSend = (int)ev.data.mouse.y;
+
+            if (_isHolding && !brokeFromJitterThreshold)
+            {
+                if ((mouseClickPosition - new OpenTK.Vector2(ev.data.mouse.x, ev.data.mouse.y)).Length >= MouseDeltaTolerance)
+                {
+                    brokeFromJitterThreshold = true;
+                }
+                else
+                {
+                    xToSend = (int)mouseClickPosition.X;
+                    yToSend = (int)mouseClickPosition.Y;
+                }
+            }
+
+            _browser.GetBrowser().GetHost().SendMouseClickEvent((int)xToSend, _windowHeight - (int)yToSend, GetMouseButtonType(ev.data.mouse.button), true, 1, CefEventFlags.None);
 
             if ((EVRMouseButton)ev.data.mouse.button == EVRMouseButton.Left)
             {
                 _isHolding = false;
+                brokeFromJitterThreshold = false;
+
+                if (SteamVR_WebKit.TraceLevel)
+                {
+                    SteamVR_WebKit.Log("[WEBKIT] Mouse Up Event Fired at " + xToSend + "," + yToSend);
+                }
             }
         }
 
