@@ -219,8 +219,8 @@ namespace SteamVR_WebKit
                 SetDeviceAttachment(SteamVR_WebKit.OVRSystem.GetTrackedDeviceIndexForControllerRole(attachmentType == AttachmentType.LeftController ? ETrackedControllerRole.LeftHand : ETrackedControllerRole.RightHand), position, rotation);
                 if (!_controllerListenersSetup)
                 {
-                    SteamVR_Event.Listen("TrackedDeviceRoleChanged", HandleDeviceChange);
-                    SteamVR_Event.Listen("device_connected", HandleDeviceChange);
+                    SteamVR_Event.Listen("TrackedDeviceRoleChanged", HandleDeviceRoleChanged);
+                    SteamVR_Event.Listen("device_connected", HandleDeviceConnected);
                     _controllerListenersSetup = true;
                 } else
                 {
@@ -256,23 +256,32 @@ namespace SteamVR_WebKit
             SteamVR_WebKit.OverlayManager.SetOverlayTransformTrackedDeviceRelative(_handle, index, ref matrix);
         }
 
-        private void HandleDeviceChange(params object[] args)
+        private void HandleDeviceRoleChanged(params object[] args)
+        {
+            RefreshDevice();
+        }
+
+        void RefreshDevice()
+        {
+            uint changedDeviceIndex = SteamVR_WebKit.OVRSystem.GetTrackedDeviceIndexForControllerRole(_attachmentType == AttachmentType.LeftController ? ETrackedControllerRole.LeftHand : ETrackedControllerRole.RightHand);
+            if (changedDeviceIndex != OpenVR.k_unTrackedDeviceIndexInvalid)
+            {
+                SetDeviceAttachment(changedDeviceIndex, _position, _rotation);
+                if (!_sentAttachmentSuccess)
+                {
+                    OnAttachmentSuccess?.Invoke();
+                    _sentAttachmentSuccess = true;
+                }
+            }
+        }
+
+        private void HandleDeviceConnected(params object[] args)
         {
             var index = (uint)(int)args[0];
             var system = OpenVR.System;
             if (system != null && system.GetTrackedDeviceClass(index) == ETrackedDeviceClass.Controller)
             {
-                //Check to ensure the device changed is the device we're interested in
-                uint changedDeviceIndex = SteamVR_WebKit.OVRSystem.GetTrackedDeviceIndexForControllerRole(_attachmentType == AttachmentType.LeftController ? ETrackedControllerRole.LeftHand : ETrackedControllerRole.RightHand);
-                if (changedDeviceIndex != OpenVR.k_unTrackedDeviceIndexInvalid)
-                {
-                    SetDeviceAttachment(changedDeviceIndex, _position, _rotation);
-                    if (!_sentAttachmentSuccess)
-                    {
-                        OnAttachmentSuccess?.Invoke();
-                        _sentAttachmentSuccess = true;
-                    }
-                }
+                RefreshDevice();
             }
         }
 
@@ -404,8 +413,8 @@ namespace SteamVR_WebKit
 
             if (_controllerListenersSetup)
             {
-                SteamVR_Event.Listen("TrackedDeviceRoleChanged", HandleDeviceChange);
-                SteamVR_Event.Listen("device_connected", HandleDeviceChange);
+                SteamVR_Event.Listen("TrackedDeviceRoleChanged", HandleDeviceConnected);
+                SteamVR_Event.Listen("device_connected", HandleDeviceConnected);
             }
         }
 
