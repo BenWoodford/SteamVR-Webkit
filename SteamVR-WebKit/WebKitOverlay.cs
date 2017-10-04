@@ -307,17 +307,30 @@ namespace SteamVR_WebKit
 
         public void CreateDashboardOverlay()
         {
-            _dashboardOverlay = new Overlay("dashboard." + _overlayKey, _overlayName, 2.0f, false);
+            _dashboardOverlay = new Overlay((SteamVR_WebKit.PrefixOverlayType ? "dashboard." : "") + _overlayKey, _overlayName, 2.0f, false);
             _dashboardOverlay.SetTextureSize(_windowWidth, _windowHeight);
             //_dashboardOverlay.Show();
         }
 
         public void CreateInGameOverlay()
         {
-            _inGameOverlay = new Overlay("ingame." + _overlayKey, _overlayName, 2.0f, true);
+            _inGameOverlay = new Overlay((SteamVR_WebKit.PrefixOverlayType ? "ingame." : "") + _overlayKey, _overlayName, 2.0f, true);
             _inGameOverlay.SetTextureSize(_windowWidth, _windowHeight);
             _inGameOverlay.ToggleInput(EnableNonDashboardInput);
             _inGameOverlay.Show();
+        }
+
+        public void Destroy()
+        {
+            if (_inGameOverlay != null)
+                DestroyInGameOverlay();
+
+            if (_dashboardOverlay != null)
+                DestroyDashboardOverlay();
+
+            SteamVR_WebKit.Overlays.Remove(this);
+
+            _browser.GetBrowser().CloseBrowser(true);
         }
 
         public void DestroyInGameOverlay()

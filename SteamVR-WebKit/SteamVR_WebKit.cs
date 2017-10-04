@@ -35,6 +35,7 @@ namespace SteamVR_WebKit
         public static event EventHandler PostDrawCallback;
 
         public static bool TraceLevel = false;
+        public static bool PrefixOverlayType = true;
 
         public static WebKitOverlay ActiveKeyboardOverlay = null;
 
