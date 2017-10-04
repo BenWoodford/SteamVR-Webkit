@@ -179,8 +179,8 @@ namespace SteamVR_WebKit
                 CreateInGameOverlay();
             else
             {
-                CreateDashboardOverlay();
-                CreateInGameOverlay();
+                CreateDashboardOverlay(true);
+                CreateInGameOverlay(true);
             }
 
             SteamVR_WebKit.Overlays.Add(this);
@@ -305,16 +305,16 @@ namespace SteamVR_WebKit
             throw new NotImplementedException("I'll find the option to change the audio in CEF eventually.");
         }
 
-        public void CreateDashboardOverlay()
+        public void CreateDashboardOverlay(bool forcePrefix = false)
         {
-            _dashboardOverlay = new Overlay((SteamVR_WebKit.PrefixOverlayType ? "dashboard." : "") + _overlayKey, _overlayName, 2.0f, false);
+            _dashboardOverlay = new Overlay((SteamVR_WebKit.PrefixOverlayType || forcePrefix ? "dashboard." : "") + _overlayKey, _overlayName, 2.0f, false);
             _dashboardOverlay.SetTextureSize(_windowWidth, _windowHeight);
             //_dashboardOverlay.Show();
         }
 
-        public void CreateInGameOverlay()
+        public void CreateInGameOverlay(bool forcePrefix = false)
         {
-            _inGameOverlay = new Overlay((SteamVR_WebKit.PrefixOverlayType ? "ingame." : "") + _overlayKey, _overlayName, 2.0f, true);
+            _inGameOverlay = new Overlay((SteamVR_WebKit.PrefixOverlayType || forcePrefix ? "ingame." : "") + _overlayKey, _overlayName, 2.0f, true);
             _inGameOverlay.SetTextureSize(_windowWidth, _windowHeight);
             _inGameOverlay.ToggleInput(EnableNonDashboardInput);
             _inGameOverlay.Show();
