@@ -35,6 +35,9 @@ namespace SteamVR_WebKit
 
         bool _ingame = false;
         uint eventSize = (uint)System.Runtime.InteropServices.Marshal.SizeOf(typeof(VREvent_t));
+        bool _hasBackSide = false;
+
+        ulong _backSideHandle;
 
         public String Key
         {
@@ -49,6 +52,11 @@ namespace SteamVR_WebKit
         public ulong Handle
         {
             get { return _handle; }
+        }
+
+        public ulong BackSideHandle
+        {
+            get { return _backSideHandle; }
         }
 
         public ulong ThumbnailHandle
@@ -105,11 +113,16 @@ namespace SteamVR_WebKit
             SteamVR_WebKit.OverlayManager.GetOverlayAlpha(_handle, ref _alpha);
         }
 
-        public Overlay(string key, string name, float width = 2.0f, bool isInGameOverlay = false)
+        public Overlay(string key, string name, float width = 2.0f, bool isInGameOverlay = false, bool hasBackSide = false)
         {
             _key = key;
             _name = name;
             _ingame = isInGameOverlay;
+
+            if (!isInGameOverlay)
+                hasBackSide = false;
+
+            _hasBackSide = hasBackSide;
 
             CreateOverlayInSteamVR();
             Width = width;
@@ -122,6 +135,11 @@ namespace SteamVR_WebKit
         {
             SteamVR_WebKit.OverlayManager.DestroyOverlay(_handle);
             SteamVR_WebKit.OverlayManager.DestroyOverlay(_thumbnailHandle);
+
+            if(_hasBackSide)
+            {
+                SteamVR_WebKit.OverlayManager.DestroyOverlay(_backSideHandle);
+            }
         }
 
         public void SetHighQuality()
@@ -207,7 +225,11 @@ namespace SteamVR_WebKit
                 if (_attachedToHandle != 0)
                 {
                     HmdMatrix34_t matrix = GetMatrixFromPositionAndRotation(position, rotation);
-                    SteamVR_WebKit.OverlayManager.SetOverlayTransformOverlayRelative(_handle, _attachedToHandle, ref matrix);
+                    EVROverlayError err = SteamVR_WebKit.OverlayManager.SetOverlayTransformOverlayRelative(_handle, _attachedToHandle, ref matrix);
+
+                    if (err != EVROverlayError.None)
+                        SteamVR_WebKit.Log("Failed to attach " + Key + " to Overlay " + attachmentKey + " failed: " + err.ToString());
+
                     _sentAttachmentSuccess = true;
                 } else
                 {
@@ -253,7 +275,10 @@ namespace SteamVR_WebKit
 
             HmdMatrix34_t matrix = GetMatrixFromPositionAndRotation(position, rotation);
 
-            SteamVR_WebKit.OverlayManager.SetOverlayTransformTrackedDeviceRelative(_handle, index, ref matrix);
+            EVROverlayError err = SteamVR_WebKit.OverlayManager.SetOverlayTransformTrackedDeviceRelative(_handle, index, ref matrix);
+
+            if (err != EVROverlayError.None)
+                SteamVR_WebKit.Log("Failed to attach " + Key + " to Device " + index + " failed: " + err.ToString());
         }
 
         private void HandleDeviceRoleChanged(params object[] args)
@@ -327,8 +352,23 @@ namespace SteamVR_WebKit
                 throw new Exception("Failed to create overlay: " + ovrErr.ToString());
             }
 
-            SteamVR_WebKit.OverlayManager.SetOverlayAlpha(_handle, 1.0f);
             SteamVR_WebKit.OverlayManager.SetOverlayColor(_handle, 1.0f, 1.0f, 1.0f);
+
+            if(_hasBackSide)
+            {
+                ovrErr = SteamVR_WebKit.OverlayManager.CreateOverlay(Key + "_backside", Name, ref _backSideHandle);
+
+                if(ovrErr != EVROverlayError.None)
+                {
+                    throw new Exception("Failed to create backside of overlay: " + ovrErr.ToString());
+                }
+                SteamVR_WebKit.OverlayManager.SetOverlayColor(_backSideHandle, 1.0f, 1.0f, 1.0f);
+
+                HmdMatrix34_t matrix = GetMatrixFromPositionAndRotation(new Vector3(0,0,0), new Vector3(0,180,0));
+                SteamVR_WebKit.OverlayManager.SetOverlayTransformOverlayRelative(_backSideHandle, _handle, ref matrix);
+            }
+
+            Alpha = 1.0f;
 
 
             // Because it'll be upside down otherwise.
@@ -340,6 +380,12 @@ namespace SteamVR_WebKit
             bounds.uMax = 1;
 
             SteamVR_WebKit.OverlayManager.SetOverlayTextureBounds(_handle, ref bounds);
+
+            if (_hasBackSide)
+            {
+                bounds.uMin = 1; bounds.uMax = 0; // Flip the backside texture
+                SteamVR_WebKit.OverlayManager.SetOverlayTextureBounds(_backSideHandle, ref bounds);
+            }
         }
 
         public void ToggleInput(bool toggle)
@@ -349,12 +395,26 @@ namespace SteamVR_WebKit
                 SteamVR_WebKit.OverlayManager.SetOverlayInputMethod(_handle, VROverlayInputMethod.Mouse);
                 SteamVR_WebKit.OverlayManager.SetOverlayFlag(_handle, VROverlayFlags.ShowTouchPadScrollWheel, true);
                 SteamVR_WebKit.OverlayManager.SetOverlayFlag(_handle, VROverlayFlags.SendVRScrollEvents, true);
+
+                if(_hasBackSide)
+                {
+                    SteamVR_WebKit.OverlayManager.SetOverlayInputMethod(_backSideHandle, VROverlayInputMethod.Mouse);
+                    SteamVR_WebKit.OverlayManager.SetOverlayFlag(_backSideHandle, VROverlayFlags.ShowTouchPadScrollWheel, true);
+                    SteamVR_WebKit.OverlayManager.SetOverlayFlag(_backSideHandle, VROverlayFlags.SendVRScrollEvents, true);
+                }
             }
             else
             {
                 SteamVR_WebKit.OverlayManager.SetOverlayInputMethod(_handle, VROverlayInputMethod.None);
                 SteamVR_WebKit.OverlayManager.SetOverlayFlag(_handle, VROverlayFlags.ShowTouchPadScrollWheel, false);
                 SteamVR_WebKit.OverlayManager.SetOverlayFlag(_handle, VROverlayFlags.SendVRScrollEvents, false);
+
+                if (_hasBackSide)
+                {
+                    SteamVR_WebKit.OverlayManager.SetOverlayInputMethod(_backSideHandle, VROverlayInputMethod.None);
+                    SteamVR_WebKit.OverlayManager.SetOverlayFlag(_backSideHandle, VROverlayFlags.ShowTouchPadScrollWheel, false);
+                    SteamVR_WebKit.OverlayManager.SetOverlayFlag(_backSideHandle, VROverlayFlags.SendVRScrollEvents, false);
+                }
             }
         }
 
@@ -364,6 +424,9 @@ namespace SteamVR_WebKit
             scale.v0 = width;
             scale.v1 = height;
             SteamVR_WebKit.OverlayManager.SetOverlayMouseScale(_handle, ref scale);
+
+            if(_hasBackSide)
+                SteamVR_WebKit.OverlayManager.SetOverlayMouseScale(_backSideHandle, ref scale);
         }
 
         public void SetThumbnail(string filePath)
@@ -374,11 +437,19 @@ namespace SteamVR_WebKit
         void UpdateWidth()
         {
             SteamVR_WebKit.OverlayManager.SetOverlayWidthInMeters(_handle, _width);
+
+            if(_hasBackSide)
+                SteamVR_WebKit.OverlayManager.SetOverlayWidthInMeters(_backSideHandle, _width);
         }
 
         void UpdateAlpha()
         {
             SteamVR_WebKit.OverlayManager.SetOverlayAlpha(_handle, _alpha);
+
+            if(_hasBackSide)
+            {
+                SteamVR_WebKit.OverlayManager.SetOverlayAlpha(_backSideHandle, _alpha);
+            }
         }
 
         public void SetTexture(ref Texture_t texture)
@@ -387,16 +458,34 @@ namespace SteamVR_WebKit
 
             if (err != EVROverlayError.None)
                 SteamVR_WebKit.Log("Failed to send texture: " + err.ToString());
+
+            if (_hasBackSide)
+            {
+                err = SteamVR_WebKit.OverlayManager.SetOverlayTexture(_backSideHandle, ref texture);
+
+                if (err != EVROverlayError.None)
+                    SteamVR_WebKit.Log("Failed to send texture: " + err.ToString());
+            }
         }
 
         public void Show()
         {
             SteamVR_WebKit.OverlayManager.ShowOverlay(_handle);
+
+            if(_hasBackSide)
+            {
+                SteamVR_WebKit.OverlayManager.ShowOverlay(_backSideHandle);
+            }
         }
 
         public void Hide()
         {
             SteamVR_WebKit.OverlayManager.HideOverlay(_handle);
+
+            if (_hasBackSide)
+            {
+                SteamVR_WebKit.OverlayManager.HideOverlay(_backSideHandle);
+            }
         }
 
         public void ForceShow()
@@ -407,6 +496,11 @@ namespace SteamVR_WebKit
         public void Destroy()
         {
             SteamVR_WebKit.OverlayManager.DestroyOverlay(_handle);
+
+            if(_hasBackSide)
+            {
+                SteamVR_WebKit.OverlayManager.DestroyOverlay(_backSideHandle);
+            }
 
             if(_thumbnailHandle > 0)
                 SteamVR_WebKit.OverlayManager.DestroyOverlay(_thumbnailHandle);
@@ -425,7 +519,7 @@ namespace SteamVR_WebKit
 
         public bool PollEvent(ref VREvent_t ovrEvent)
         {
-            return SteamVR_WebKit.OverlayManager.PollNextOverlayEvent(_handle, ref ovrEvent, eventSize);
+            return SteamVR_WebKit.OverlayManager.PollNextOverlayEvent(_handle, ref ovrEvent, eventSize) || SteamVR_WebKit.OverlayManager.PollNextOverlayEvent(_backSideHandle, ref ovrEvent, eventSize);
         }
     }
 }
