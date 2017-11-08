@@ -35,6 +35,7 @@ namespace SteamVR_WebKit
         VREvent_t eventData = new VREvent_t();
         OpenTK.Vector2 mouseClickPosition;
         bool brokeFromJitterThreshold = false;
+        BitmapData alphaMapData;
 
         public OverlayMessageHandler MessageHandler { get; }
 
@@ -47,7 +48,16 @@ namespace SteamVR_WebKit
 
         public bool AllowScrolling
         {
-            get { return _allowScrolling; } set { _allowScrolling = value; }
+            get { return _allowScrolling; }
+            set {
+                _allowScrolling = value;
+
+                if (InGameOverlay != null)
+                    InGameOverlay.EnableScrolling = value;
+
+                if (DashboardOverlay != null)
+                    DashboardOverlay.EnableScrolling = value;
+            }
         }
 
         bool _isHolding = false;
@@ -151,6 +161,8 @@ namespace SteamVR_WebKit
         public IRequestContextHandler RequestContextHandler { get; set; }
 
         public double ZoomLevel { get { return _zoomLevel; } set { _zoomLevel = value; } }
+
+        public Bitmap AlphaMask { get; set; }
 
         [Obsolete("Please use the newer constructor that lets you define whether to show in dashboard, in-game or both instead.")]
         public WebKitOverlay(Uri uri, int windowWidth, int windowHeight, string overlayKey, string overlayName, float overlayWidth = 2f, bool isInGameOverlay = false) : this(uri, windowWidth, windowHeight, overlayKey, overlayName, isInGameOverlay ? OverlayType.InGame : OverlayType.Dashboard)
@@ -266,6 +278,15 @@ namespace SteamVR_WebKit
                 return true;
 
             return false;
+        }
+
+        public void UpdateInputSettings()
+        {
+            if (DashboardOverlay != null)
+                DashboardOverlay.ToggleInput(true);
+
+            if (InGameOverlay != null)
+                InGameOverlay.ToggleInput(EnableNonDashboardInput);
         }
 
         string GetNodeValue(IDomNode node)
@@ -484,10 +505,27 @@ namespace SteamVR_WebKit
             if (_browser.Bitmap == null)
                 return;
 
+            /*
+            if (AlphaMask != null)
+            {
+                if (AlphaMask.Width != _browser.Bitmap.Width || AlphaMask.Height != _browser.Bitmap.Height)
+                {
+                    AlphaMask = new Bitmap(AlphaMask, new Size(_browser.Bitmap.Width, _browser.Bitmap.Height));
+                }
+
+                if (alphaMapData == null)
+                {
+                    alphaMapData = AlphaMask.LockBits(
+                        new Rectangle(0, 0, AlphaMask.Width, AlphaMask.Height),
+                        ImageLockMode.ReadOnly,
+                        System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+                }
+            }*/
+
             lock (_browser.BitmapLock) {
                 BitmapData bmpData = _browser.Bitmap.LockBits(
                     new Rectangle(0, 0, _browser.Bitmap.Width, _browser.Bitmap.Height),
-                    ImageLockMode.ReadOnly,
+                    ImageLockMode.ReadWrite,
                     System.Drawing.Imaging.PixelFormat.Format32bppArgb
                     );
 
@@ -496,7 +534,50 @@ namespace SteamVR_WebKit
                 if (SteamVR_WebKit.TraceLevel)
                     SteamVR_WebKit.Log("BindTexture: " + GL.GetError());
 
+                /*if (AlphaMask != null)
+                {
+                    unsafe
+                    {
+
+                        byte* browserScanData = (byte*)bmpData.Scan0;
+                        int strideSize = bmpData.Stride;
+
+                        byte* alphaScanData = (byte*)alphaMapData.Scan0;
+
+                        int y, yPart, x, ind;
+
+                        for (y = 0; y < _browser.Bitmap.Height; y++)
+                        {
+                            yPart = y * strideSize;
+
+                            for (x = 0; x < _browser.Bitmap.Width; x++)
+                            {
+                                ind = y * strideSize + x * 4 + 3;
+                                if (alphaScanData[ind] < 255)
+                                    browserScanData[ind] = alphaScanData[ind];
+                            }
+                        }
+                    }
+                }*/
+
                 GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, _browser.Bitmap.Width, _browser.Bitmap.Height, 0, OpenTK.Graphics.OpenGL.PixelFormat.Bgra, PixelType.UnsignedByte, bmpData.Scan0);
+
+                /*if (AlphaMask != null)
+                {
+                    BitmapData alphaMapData = AlphaMask.LockBits(
+                        new Rectangle(0, 0, AlphaMask.Width, AlphaMask.Height),
+                        ImageLockMode.ReadOnly,
+                        System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+
+                    GL.Enable(EnableCap.Blend);
+                    GL.BlendFuncSeparate(BlendingFactorSrc.Zero, BlendingFactorDest.One, BlendingFactorSrc.One, BlendingFactorDest.Zero);
+                    GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, AlphaMask.Width, AlphaMask.Height, 0, OpenTK.Graphics.OpenGL.PixelFormat.Bgra, PixelType.UnsignedByte, alphaMapData.Scan0);
+
+                    AlphaMask.UnlockBits(alphaMapData);
+
+                    //GL.BlendFunc(BlendingFactorSrc.One, BlendingFactorDest.Zero);
+                    GL.Disable(EnableCap.Blend);
+                }*/
 
                 if (SteamVR_WebKit.TraceLevel)
                     SteamVR_WebKit.Log("TexImage2D: " + GL.GetError());
@@ -623,6 +704,9 @@ namespace SteamVR_WebKit
 
         bool CanDoUpdates()
         {
+            if (Browser == null)
+                return false;
+
             if (DashboardOverlay == null && InGameOverlay == null)
                 return false; // We can go no further.
 
@@ -762,7 +846,7 @@ namespace SteamVR_WebKit
 
         public void TryExecAsyncJS(string js)
         {
-            if (_inGameOverlay == null || _inGameOverlay.AttachmentSuccess)
+            if ((_inGameOverlay == null || _inGameOverlay.AttachmentSuccess) && Browser.IsBrowserInitialized)
                 ExecAsyncJS(js);
             else
                 JSCommandQueue.Enqueue(js);

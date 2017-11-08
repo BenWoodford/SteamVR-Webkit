@@ -86,6 +86,8 @@ namespace SteamVR_WebKit
             get { return (int)(_width * 100f); }
             set { _width = (float)value / 100; UpdateWidth(); }
         }
+
+        public bool EnableScrolling { get; set; } = true;
         
         /// <summary>
         /// Create object for an existing overlay by overlay key. Useful to gain access to the stock overlays.
@@ -393,14 +395,14 @@ namespace SteamVR_WebKit
             if (toggle)
             {
                 SteamVR_WebKit.OverlayManager.SetOverlayInputMethod(_handle, VROverlayInputMethod.Mouse);
-                SteamVR_WebKit.OverlayManager.SetOverlayFlag(_handle, VROverlayFlags.ShowTouchPadScrollWheel, true);
-                SteamVR_WebKit.OverlayManager.SetOverlayFlag(_handle, VROverlayFlags.SendVRScrollEvents, true);
+                SteamVR_WebKit.OverlayManager.SetOverlayFlag(_handle, VROverlayFlags.ShowTouchPadScrollWheel, EnableScrolling);
+                SteamVR_WebKit.OverlayManager.SetOverlayFlag(_handle, VROverlayFlags.SendVRScrollEvents, EnableScrolling);
 
                 if(_hasBackSide)
                 {
                     SteamVR_WebKit.OverlayManager.SetOverlayInputMethod(_backSideHandle, VROverlayInputMethod.Mouse);
-                    SteamVR_WebKit.OverlayManager.SetOverlayFlag(_backSideHandle, VROverlayFlags.ShowTouchPadScrollWheel, true);
-                    SteamVR_WebKit.OverlayManager.SetOverlayFlag(_backSideHandle, VROverlayFlags.SendVRScrollEvents, true);
+                    SteamVR_WebKit.OverlayManager.SetOverlayFlag(_backSideHandle, VROverlayFlags.ShowTouchPadScrollWheel, EnableScrolling);
+                    SteamVR_WebKit.OverlayManager.SetOverlayFlag(_backSideHandle, VROverlayFlags.SendVRScrollEvents, EnableScrolling);
                 }
             }
             else

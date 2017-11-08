@@ -2,7 +2,7 @@
 
 namespace Valve.VR
 {
-    class SteamVR_Event
+    public class SteamVR_Event
     {
         public delegate void Handler(params object[] args);
 

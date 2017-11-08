@@ -55,5 +55,27 @@ namespace SteamVR_WebKit
 
             return newmatrix;
         }
+
+        public static Matrix4 OpenVRMatrixToOpenTKMatrix4(HmdMatrix34_t matrix)
+        {
+            var newmatrix = new Matrix4();
+            newmatrix[0, 0] = matrix.m0;
+            newmatrix[1, 0] = matrix.m1;
+            newmatrix[2, 0] = -matrix.m2;
+            newmatrix[3, 0] = matrix.m3;
+
+            newmatrix[0, 1] = matrix.m4;
+            newmatrix[1, 1] = matrix.m5;
+            newmatrix[2, 1] = -matrix.m6;
+            newmatrix[3, 1] = matrix.m7;
+
+            newmatrix[0, 2] = -matrix.m8;
+            newmatrix[1, 2] = -matrix.m9;
+            newmatrix[2, 2] = matrix.m10;
+            newmatrix[3, 2] = -matrix.m11;
+
+            return newmatrix;
+        }
+
     }
 }
