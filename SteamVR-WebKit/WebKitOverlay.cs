@@ -37,6 +37,8 @@ namespace SteamVR_WebKit
         bool brokeFromJitterThreshold = false;
         BitmapData alphaMapData;
 
+        bool _dirtySize = true;
+
         public OverlayMessageHandler MessageHandler { get; }
 
         bool _browserDidUpdate;
@@ -287,6 +289,12 @@ namespace SteamVR_WebKit
 
             if (InGameOverlay != null)
                 InGameOverlay.ToggleInput(EnableNonDashboardInput);
+        }
+
+        public void SetBrowserSize(int width, int height)
+        {
+            _browser.Size = new Size(width, height);
+            _dirtySize = true;
         }
 
         string GetNodeValue(IDomNode node)
@@ -560,7 +568,16 @@ namespace SteamVR_WebKit
                     }
                 }*/
 
-                GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, _browser.Bitmap.Width, _browser.Bitmap.Height, 0, OpenTK.Graphics.OpenGL.PixelFormat.Bgra, PixelType.UnsignedByte, bmpData.Scan0);
+                if (_dirtySize)
+                {
+                    GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, _browser.Bitmap.Width, _browser.Bitmap.Height, 0, OpenTK.Graphics.OpenGL.PixelFormat.Bgra, PixelType.UnsignedByte, bmpData.Scan0);
+                    _dirtySize = false;
+                }
+                else
+                {
+                    GL.TexSubImage2D(TextureTarget.Texture2D, 0, 0, 0, _browser.Bitmap.Width, _browser.Bitmap.Height, OpenTK.Graphics.OpenGL.PixelFormat.Bgra, PixelType.UnsignedByte, bmpData.Scan0);
+                }
+
 
                 /*if (AlphaMask != null)
                 {
