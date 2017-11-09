@@ -25,7 +25,7 @@ namespace SteamVR_WebKit
             {
                 retVal.WindowsKeyCode = (int)Keys.Back;
                 retVal.Type = KeyEventType.KeyDown;
-                retVal.IsSystemKey = true;
+                retVal.IsSystemKey = false;
                 return retVal;
             } else if(actualChar == '\n')
             {
