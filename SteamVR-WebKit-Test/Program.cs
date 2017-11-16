@@ -28,6 +28,7 @@ namespace SteamVR_WebKit_Test
         static void Main(string[] args)
         {
             SteamVR_WebKit.SteamVR_WebKit.UseExperimentalOGL = true;
+            SteamVR_WebKit.SteamVR_WebKit.DefaultFragmentShaderPath = Environment.CurrentDirectory + "\\Resources\\fragShader.frag";
             SteamVR_WebKit.SteamVR_WebKit.Init(new CefSharp.CefSettings() { FocusedNodeChangedEnabled = true });
             SteamVR_WebKit.SteamVR_WebKit.FPS = 30;
             SteamVR_WebKit.SteamVR_WebKit.LogEvent += SteamVR_WebKit_LogEvent;
@@ -56,6 +57,7 @@ namespace SteamVR_WebKit_Test
             videoOverlay.DashboardOverlay.Width = 3.0f;
             videoOverlay.StartBrowser();
             videoOverlay.AlphaMask = new Bitmap(Environment.CurrentDirectory + "\\Resources\\alphamap.png");
+            videoOverlay.UpdateEveryFrame = true;
 
             /*applicationsOverlay = new WebKitOverlay(new Uri("file://" + Environment.CurrentDirectory + "/Resources/applications.html"), 1024, 1024, "webkitTestApps", "WebKit-Apps", OverlayType.Dashboard);
             applicationsOverlay.DashboardOverlay.Width = 2.0f;

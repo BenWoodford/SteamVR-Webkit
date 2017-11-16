@@ -37,6 +37,7 @@ namespace SteamVR_WebKit
         public static bool TraceLevel = false;
         public static bool PrefixOverlayType = true;
         public static bool UseExperimentalOGL = false;
+        public static string DefaultFragmentShaderPath = null;
 
         public static WebKitOverlay ActiveKeyboardOverlay = null;
 

@@ -10,6 +10,8 @@ using Valve.VR;
 using System.Drawing;
 using System.Drawing.Imaging;
 using CefSharp.Internals;
+using System.IO;
+using OpenTK;
 
 namespace SteamVR_WebKit
 {
@@ -34,18 +36,37 @@ namespace SteamVR_WebKit
         VREvent_t eventData = new VREvent_t();
         OpenTK.Vector2 mouseClickPosition;
         bool brokeFromJitterThreshold = false;
-        BitmapData alphaMapData;
+
+        public bool EnableTransparency {
+            get
+            {
+                return _browserSettings.OffScreenTransparentBackground.HasValue ? false : _browserSettings.OffScreenTransparentBackground.Value;
+            }
+
+            set
+            {
+                _browserSettings.OffScreenTransparentBackground = value;
+            }
+        }
 
         #region OGL Stuff
         int _glInputTextureId = 0;
         int _glOutputTextureId = 0;
+        int _glAlphaMaskTextureId = 0;
         int _glFrameBufferId = 0;
+        int _glFragmentShaderProgramId = 0;
         //int _glDepthRenderBuffer = 0;
         #endregion
+
+        public string FragmentShaderPath { get; set; }
+
+        public bool UpdateEveryFrame { get; set; }
 
         bool _dirtySize = true;
 
         public OverlayMessageHandler MessageHandler { get; }
+
+        Vector2 _lastMousePosition;
 
         bool _browserDidUpdate;
 
@@ -193,6 +214,8 @@ namespace SteamVR_WebKit
             _overlayKey = overlayKey;
             _overlayName = overlayName;
 
+            AppDomain.CurrentDomain.ProcessExit += CurrentDomain_ProcessExit;
+
             if (overlayType == OverlayType.Dashboard)
                 CreateDashboardOverlay();
             else if (overlayType == OverlayType.InGame)
@@ -208,6 +231,12 @@ namespace SteamVR_WebKit
             FocusedNodeChanged += WebKitOverlay_FocusedNodeChanged;
 
             SetupTextures();
+        }
+
+        private void CurrentDomain_ProcessExit(object sender, EventArgs e)
+        {
+            if (_glFragmentShaderProgramId > 0)
+                GL.DeleteProgram(_glFragmentShaderProgramId);
         }
 
         private void WebKitOverlay_FocusedNodeChanged(IWebBrowser browserControl, IBrowser browser, IFrame frame, IDomNode node)
@@ -543,14 +572,49 @@ namespace SteamVR_WebKit
                 }
 
                 GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
+
+                if(SteamVR_WebKit.DefaultFragmentShaderPath != null || FragmentShaderPath != null)
+                {
+                    SteamVR_WebKit.Log("[OPENGL] Using Fragment Shader");
+
+                    string path = FragmentShaderPath != null ? FragmentShaderPath : SteamVR_WebKit.DefaultFragmentShaderPath;
+
+                    CompileShader(path);
+                }
             }
 
             SteamVR_WebKit.Log("Texture Setup complete for " + _overlayKey);
         }
 
+        void CompileShader(string path)
+        {
+            if(!File.Exists(path))
+            {
+                SteamVR_WebKit.Log("[OPENGL] No Shader Found at " + path);
+                return;
+            }
+
+            int fragShaderId = GL.CreateShader(ShaderType.FragmentShader);
+            GL.ShaderSource(fragShaderId, File.ReadAllText(path));
+            GL.CompileShader(fragShaderId);
+
+            _glFragmentShaderProgramId = GL.CreateProgram();
+            GL.AttachShader(_glFragmentShaderProgramId, fragShaderId);
+            GL.LinkProgram(_glFragmentShaderProgramId);
+
+            SteamVR_WebKit.Log("[OPENGL] Shader Result: " + GL.GetProgramInfoLog(_glFragmentShaderProgramId));
+
+            GL.DetachShader(_glFragmentShaderProgramId, fragShaderId);
+            GL.DeleteShader(fragShaderId);
+
+            GL.Uniform1(GL.GetUniformLocation(_glFragmentShaderProgramId, "_MainTex"), 0);
+            GL.ActiveTexture(TextureUnit.Texture0);
+            GL.BindTexture(TextureTarget.Texture2D, _glInputTextureId);
+        }
+
         public virtual void UpdateTexture()
         {
-            if (!_browserDidUpdate)
+            if (!_browserDidUpdate && !UpdateEveryFrame)
                 return;
 
             _browserDidUpdate = false;
@@ -563,14 +627,29 @@ namespace SteamVR_WebKit
                 if (AlphaMask.Width != _browser.Bitmap.Width || AlphaMask.Height != _browser.Bitmap.Height)
                 {
                     AlphaMask = new Bitmap(AlphaMask, new Size(_browser.Bitmap.Width, _browser.Bitmap.Height));
-                }
 
-                if (alphaMapData == null)
-                {
-                    alphaMapData = AlphaMask.LockBits(
+                    BitmapData alphaMapData = AlphaMask.LockBits(
                         new Rectangle(0, 0, AlphaMask.Width, AlphaMask.Height),
                         ImageLockMode.ReadOnly,
                         System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+
+                    _glAlphaMaskTextureId = GL.GenTexture();
+
+                    GL.BindTexture(TextureTarget.Texture2D, _glOutputTextureId);
+                    GL.BindTexture(TextureTarget.Texture2D, _glAlphaMaskTextureId);
+                    GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, AlphaMask.Width, AlphaMask.Height, 0, OpenTK.Graphics.OpenGL.PixelFormat.Bgra, PixelType.UnsignedByte, alphaMapData.Scan0);
+                    GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Nearest);
+                    GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Nearest);
+                    GL.BindTexture(TextureTarget.Texture2D, 0);
+                    AlphaMask.UnlockBits(alphaMapData);
+
+                    if(_glFragmentShaderProgramId > 0)
+                    {
+                        GL.ActiveTexture(TextureUnit.Texture1);
+                        GL.BindTexture(TextureTarget.Texture2D, _glAlphaMaskTextureId);
+                        GL.ActiveTexture(TextureUnit.Texture0); // Reset
+                    }
+
                 }
             }
 
@@ -597,23 +676,35 @@ namespace SteamVR_WebKit
                 {
                     GL.BindFramebuffer(FramebufferTarget.Framebuffer, _glFrameBufferId);
                     GL.Viewport(0, 0, _browser.Bitmap.Width, _browser.Bitmap.Height);
-                    GL.ClearColor(1, 0, 1, 1);
+                    GL.ClearColor(0,0,0,0);
                     GL.Clear(ClearBufferMask.ColorBufferBit);
-                    
+
+                    if(_glFragmentShaderProgramId > 0)
+                    {
+                        GL.UseProgram(_glFragmentShaderProgramId);
+                        GL.Uniform1(GL.GetUniformLocation(_glFragmentShaderProgramId, "_AlphaMap"), 1);
+                        GL.Uniform2(GL.GetUniformLocation(_glFragmentShaderProgramId, "_MousePosition"), _lastMousePosition.X, _lastMousePosition.Y);
+                        GL.Uniform2(GL.GetUniformLocation(_glFragmentShaderProgramId, "_OutputSize"), (float)_windowWidth, (float)_windowHeight);
+                    }
+
+                    GL.Enable(EnableCap.Blend);
+                    GL.BlendFunc(BlendingFactorSrc.One, BlendingFactorDest.Zero);
 
                     DrawQuad();
 
-                    if (AlphaMask != null)
+                    if (_glAlphaMaskTextureId > 0 && _glFragmentShaderProgramId == 0)
                     {
                         GL.Enable(EnableCap.Blend);
                         GL.BlendFuncSeparate(BlendingFactorSrc.Zero, BlendingFactorDest.One, BlendingFactorSrc.One, BlendingFactorDest.Zero);
-                        GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, AlphaMask.Width, AlphaMask.Height, 0, OpenTK.Graphics.OpenGL.PixelFormat.Bgra, PixelType.UnsignedByte, alphaMapData.Scan0);
+
+                        GL.BindTexture(TextureTarget.Texture2D, _glAlphaMaskTextureId);
 
                         DrawQuad();
 
-                        //GL.BlendFunc(BlendingFactorSrc.One, BlendingFactorDest.Zero);
-                        GL.Disable(EnableCap.Blend);
+                        //GL.BlendFunc(BlendingFactorSrc.One, BlendingFactorDest.Zero
                     }
+
+                    GL.Disable(EnableCap.Blend);
                 }
 
                 _browser.Bitmap.UnlockBits(bmpData);
@@ -661,6 +752,8 @@ namespace SteamVR_WebKit
             }
 
             _browser.GetBrowser().GetHost().SendMouseMoveEvent((int)ev.data.mouse.x, _windowHeight - (int)ev.data.mouse.y, false, _isHolding ? CefEventFlags.LeftMouseButton : CefEventFlags.None);
+
+            _lastMousePosition = new Vector2(ev.data.mouse.x, _windowHeight - ev.data.mouse.y);
 
             if (SteamVR_WebKit.TraceLevel)
             {
