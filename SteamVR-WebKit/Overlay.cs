@@ -304,7 +304,19 @@ namespace SteamVR_WebKit
 
         private void HandleDeviceConnected(params object[] args)
         {
-            var index = (uint)(int)args[0];
+            uint index = 0;
+
+            if (args.Length > 0)
+            {
+                if (args[0] is VREvent_t)
+                    index = ((VREvent_t)args[0]).trackedDeviceIndex;
+                else
+                    index = (uint)args[0];
+            } else
+            {
+                return;
+            }
+
             var system = OpenVR.System;
             if (system != null && system.GetTrackedDeviceClass(index) == ETrackedDeviceClass.Controller)
             {
