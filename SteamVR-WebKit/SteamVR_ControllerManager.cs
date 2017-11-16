@@ -6,6 +6,7 @@
 //=============================================================================
 
 using System;
+using System.Collections.Generic;
 
 namespace Valve.VR
 {
@@ -17,6 +18,8 @@ namespace Valve.VR
 
         public uint[] indices; // assigned
         public bool[] connected = new bool[OpenVR.k_unMaxTrackedDeviceCount]; // controllers only
+
+        List<uint> trackers = new List<uint>();
 
         // cached roles - may or may not be connected
         uint leftIndex = OpenVR.k_unTrackedDeviceIndexInvalid;
@@ -150,6 +153,7 @@ namespace Valve.VR
         // Keep track of assigned roles.
         private void OnTrackedDeviceRoleChanged(params object[] args)
         {
+            SteamVR_WebKit.SteamVR_WebKit.Log("[OPENVR] Device Role Changed: " + (args.Length > 0 ? args[0] : "Unknown"));
             //SteamVR_WebKit.SteamVR_WebKit.Log("Controller role change detected");
             Refresh();
         }
@@ -161,15 +165,17 @@ namespace Valve.VR
             bool changed = this.connected[index];
             this.connected[index] = false;
 
+            SteamVR_WebKit.SteamVR_WebKit.Log("[OPENVR] Device Connected " + index);
+
             var connected = (bool)args[1];
             if (connected)
             {
                 var system = OpenVR.System;
-                if (system != null && system.GetTrackedDeviceClass(index) == ETrackedDeviceClass.Controller)
-                {
+                /*if (system != null && system.GetTrackedDeviceClass(index) == ETrackedDeviceClass.Controller)
+                {*/
                     this.connected[index] = true;
                     changed = !changed; // if we clear and set the same index, nothing has changed
-                }
+                //}
             }
 
             if (changed)

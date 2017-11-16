@@ -20,7 +20,6 @@ namespace SteamVR_WebKit
         Uri _uri;
         Overlay _dashboardOverlay;
         Overlay _inGameOverlay;
-        int _glTextureId = 0;
         Texture_t _textureData;
         string _cachePath;
         double _zoomLevel;
@@ -36,6 +35,13 @@ namespace SteamVR_WebKit
         OpenTK.Vector2 mouseClickPosition;
         bool brokeFromJitterThreshold = false;
         BitmapData alphaMapData;
+
+        #region OGL Stuff
+        int _glInputTextureId = 0;
+        int _glOutputTextureId = 0;
+        int _glFrameBufferId = 0;
+        //int _glDepthRenderBuffer = 0;
+        #endregion
 
         bool _dirtySize = true;
 
@@ -108,7 +114,7 @@ namespace SteamVR_WebKit
 
         public int GLTextureID
         {
-            get { return _glTextureId; }
+            get { return _glInputTextureId; }
         }
 
         public bool EnableKeyboard { get; set; }
@@ -490,15 +496,54 @@ namespace SteamVR_WebKit
             if(SteamVR_WebKit.TraceLevel)
                 SteamVR_WebKit.Log("BindTexture: " + GL.GetError());
 
-            _glTextureId = GL.GenTexture();
+            _glInputTextureId = GL.GenTexture();
 
             if (SteamVR_WebKit.TraceLevel)
                 SteamVR_WebKit.Log("GenTexture: " + GL.GetError());
 
+            GL.BindTexture(TextureTarget.Texture2D, _glInputTextureId);
+
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
+
+            if (SteamVR_WebKit.TraceLevel)
+                SteamVR_WebKit.Log("TexParameter: " + GL.GetError());
+
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
+
+            if (SteamVR_WebKit.TraceLevel)
+                SteamVR_WebKit.Log("TexParameter: " + GL.GetError());
+
             _textureData = new Texture_t();
             _textureData.eColorSpace = EColorSpace.Linear;
             _textureData.eType = ETextureType.OpenGL;
-            _textureData.handle = (IntPtr)_glTextureId;
+            _textureData.handle = (IntPtr)_glInputTextureId;
+
+            if(SteamVR_WebKit.UseExperimentalOGL)
+            {
+                GL.MatrixMode(MatrixMode.Projection);
+                GL.LoadIdentity();
+                _glFrameBufferId = GL.GenFramebuffer();
+                _glOutputTextureId = GL.GenTexture();
+                _textureData.handle = (IntPtr)_glOutputTextureId;
+
+                GL.BindTexture(TextureTarget.Texture2D, _glOutputTextureId);
+                GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, _windowWidth, _windowHeight, 0, OpenTK.Graphics.OpenGL.PixelFormat.Rgba, PixelType.UnsignedByte, IntPtr.Zero);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Nearest);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Nearest);
+                GL.BindTexture(TextureTarget.Texture2D, 0);
+
+                GL.BindFramebuffer(FramebufferTarget.Framebuffer, _glFrameBufferId);
+
+                GL.FramebufferTexture(FramebufferTarget.Framebuffer, FramebufferAttachment.ColorAttachment0, _glOutputTextureId, 0);
+                GL.DrawBuffer(DrawBufferMode.ColorAttachment0);
+
+                if(GL.CheckFramebufferStatus(FramebufferTarget.Framebuffer) != FramebufferErrorCode.FramebufferComplete)
+                {
+                        SteamVR_WebKit.Log("[OPENGL] Failed to setup frame buffer: " + GL.CheckFramebufferStatus(FramebufferTarget.Framebuffer).ToString());
+                }
+
+                GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
+            }
 
             SteamVR_WebKit.Log("Texture Setup complete for " + _overlayKey);
         }
@@ -513,7 +558,6 @@ namespace SteamVR_WebKit
             if (_browser.Bitmap == null)
                 return;
 
-            /*
             if (AlphaMask != null)
             {
                 if (AlphaMask.Width != _browser.Bitmap.Width || AlphaMask.Height != _browser.Bitmap.Height)
@@ -528,7 +572,7 @@ namespace SteamVR_WebKit
                         ImageLockMode.ReadOnly,
                         System.Drawing.Imaging.PixelFormat.Format32bppArgb);
                 }
-            }*/
+            }
 
             lock (_browser.BitmapLock) {
                 BitmapData bmpData = _browser.Bitmap.LockBits(
@@ -537,36 +581,7 @@ namespace SteamVR_WebKit
                     System.Drawing.Imaging.PixelFormat.Format32bppArgb
                     );
 
-                GL.BindTexture(TextureTarget.Texture2D, _glTextureId);
-
-                if (SteamVR_WebKit.TraceLevel)
-                    SteamVR_WebKit.Log("BindTexture: " + GL.GetError());
-
-                /*if (AlphaMask != null)
-                {
-                    unsafe
-                    {
-
-                        byte* browserScanData = (byte*)bmpData.Scan0;
-                        int strideSize = bmpData.Stride;
-
-                        byte* alphaScanData = (byte*)alphaMapData.Scan0;
-
-                        int y, yPart, x, ind;
-
-                        for (y = 0; y < _browser.Bitmap.Height; y++)
-                        {
-                            yPart = y * strideSize;
-
-                            for (x = 0; x < _browser.Bitmap.Width; x++)
-                            {
-                                ind = y * strideSize + x * 4 + 3;
-                                if (alphaScanData[ind] < 255)
-                                    browserScanData[ind] = alphaScanData[ind];
-                            }
-                        }
-                    }
-                }*/
+                GL.BindTexture(TextureTarget.Texture2D, _glInputTextureId);
 
                 if (_dirtySize)
                 {
@@ -578,45 +593,44 @@ namespace SteamVR_WebKit
                     GL.TexSubImage2D(TextureTarget.Texture2D, 0, 0, 0, _browser.Bitmap.Width, _browser.Bitmap.Height, OpenTK.Graphics.OpenGL.PixelFormat.Bgra, PixelType.UnsignedByte, bmpData.Scan0);
                 }
 
-
-                /*if (AlphaMask != null)
+                if (SteamVR_WebKit.UseExperimentalOGL)
                 {
-                    BitmapData alphaMapData = AlphaMask.LockBits(
-                        new Rectangle(0, 0, AlphaMask.Width, AlphaMask.Height),
-                        ImageLockMode.ReadOnly,
-                        System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+                    GL.BindFramebuffer(FramebufferTarget.Framebuffer, _glFrameBufferId);
+                    GL.Viewport(0, 0, _browser.Bitmap.Width, _browser.Bitmap.Height);
+                    GL.ClearColor(1, 0, 1, 1);
+                    GL.Clear(ClearBufferMask.ColorBufferBit);
+                    
 
-                    GL.Enable(EnableCap.Blend);
-                    GL.BlendFuncSeparate(BlendingFactorSrc.Zero, BlendingFactorDest.One, BlendingFactorSrc.One, BlendingFactorDest.Zero);
-                    GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, AlphaMask.Width, AlphaMask.Height, 0, OpenTK.Graphics.OpenGL.PixelFormat.Bgra, PixelType.UnsignedByte, alphaMapData.Scan0);
+                    DrawQuad();
 
-                    AlphaMask.UnlockBits(alphaMapData);
+                    if (AlphaMask != null)
+                    {
+                        GL.Enable(EnableCap.Blend);
+                        GL.BlendFuncSeparate(BlendingFactorSrc.Zero, BlendingFactorDest.One, BlendingFactorSrc.One, BlendingFactorDest.Zero);
+                        GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, AlphaMask.Width, AlphaMask.Height, 0, OpenTK.Graphics.OpenGL.PixelFormat.Bgra, PixelType.UnsignedByte, alphaMapData.Scan0);
 
-                    //GL.BlendFunc(BlendingFactorSrc.One, BlendingFactorDest.Zero);
-                    GL.Disable(EnableCap.Blend);
-                }*/
+                        DrawQuad();
 
-                if (SteamVR_WebKit.TraceLevel)
-                    SteamVR_WebKit.Log("TexImage2D: " + GL.GetError());
-
-                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
-
-                if (SteamVR_WebKit.TraceLevel)
-                    SteamVR_WebKit.Log("TexParameter: " + GL.GetError());
-
-                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
-
-                if (SteamVR_WebKit.TraceLevel)
-                    SteamVR_WebKit.Log("TexParameter: " + GL.GetError());
+                        //GL.BlendFunc(BlendingFactorSrc.One, BlendingFactorDest.Zero);
+                        GL.Disable(EnableCap.Blend);
+                    }
+                }
 
                 _browser.Bitmap.UnlockBits(bmpData);
                 //copyBitmap.UnlockBits(bmpData);
 
                 GL.BindTexture(TextureTarget.Texture2D, 0);
-
-                if (SteamVR_WebKit.TraceLevel)
-                    SteamVR_WebKit.Log("BindTexture: " + GL.GetError());
             }
+        }
+
+        void DrawQuad()
+        {
+            GL.Begin(PrimitiveType.Quads);
+            GL.TexCoord2(0, 1); GL.Vertex2(-1, 1); // Top Left
+            GL.TexCoord2(1, 1); GL.Vertex2(1, 1); // Top Right
+            GL.TexCoord2(1, 0); GL.Vertex2(1, -1); // Bottom Right
+            GL.TexCoord2(0, 0); GL.Vertex2(-1, -1); // Bottom Left
+            GL.End();
         }
 
         MouseButtonType GetMouseButtonType(uint button)
