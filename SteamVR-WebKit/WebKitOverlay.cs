@@ -823,7 +823,7 @@ namespace SteamVR_WebKit
         
         void HandleMouseScrollEvent(VREvent_t ev)
         {
-            _browser.GetBrowser().GetHost().SendMouseWheelEvent(0, 0, (int)(ev.data.scroll.xdelta * SCROLL_AMOUNT_PER_SWIPE), (int)(ev.data.scroll.ydelta * SCROLL_AMOUNT_PER_SWIPE), CefEventFlags.None);
+            _browser.GetBrowser().GetHost().SendMouseWheelEvent((int)_lastMousePosition.X, (int)_lastMousePosition.Y, (int)(ev.data.scroll.xdelta * SCROLL_AMOUNT_PER_SWIPE), (int)(ev.data.scroll.ydelta * SCROLL_AMOUNT_PER_SWIPE), CefEventFlags.None);
         }
 
         bool CanDoUpdates()
