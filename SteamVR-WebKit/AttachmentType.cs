@@ -13,6 +13,7 @@ namespace SteamVR_WebKit
         RightController,
         Absolute,
         Overlay,
+        AbsoluteRelative,
         DeviceIndex
     }
 }

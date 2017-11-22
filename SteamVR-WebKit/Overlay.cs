@@ -237,6 +237,47 @@ namespace SteamVR_WebKit
                 {
                     SteamVR_WebKit.Log("Attempted to attach to " + attachmentKey + " but it could not be found.");
                 }
+            } else if(attachmentType == AttachmentType.AbsoluteRelative)
+            {
+                ulong attachmentHandle = 0;
+
+                if (attachmentType == AttachmentType.Overlay && attachmentKey == null)
+                    attachmentKey = _attachedTo;
+
+                if (_attachedTo != attachmentKey)
+                {
+                    SteamVR_WebKit.OverlayManager.FindOverlay(attachmentKey, ref attachmentHandle);
+                    _attachedToHandle = attachmentHandle;
+                }
+
+                if (_attachedToHandle != 0)
+                {
+                    HmdMatrix34_t matrix = GetMatrixFromPositionAndRotation(position, rotation);
+                    HmdMatrix34_t parentMatrix = new HmdMatrix34_t();
+                    uint parentWidth = 0, parentHeight = 0;
+                    SteamVR_WebKit.OverlayManager.GetOverlayTextureSize(_attachedToHandle, ref parentWidth, ref parentHeight);
+                    EVROverlayError err = SteamVR_WebKit.OverlayManager.GetTransformForOverlayCoordinates(_attachedToHandle, ETrackingUniverseOrigin.TrackingUniverseStanding, new HmdVector2_t() { v0 = parentWidth / 2, v1 = parentHeight / 2 }, ref parentMatrix);
+
+                    if(err != EVROverlayError.None)
+                    {
+                        SteamVR_WebKit.Log("Failed to retrieve overlay position for " + _attachedTo);
+                        return;
+                    }
+
+                    HmdMatrix34_t resultMatrix = TransformUtils.OpenTKMatrixToOpenVRMatrix(TransformUtils.OpenVRMatrixToOpenTKMatrix(parentMatrix) * TransformUtils.OpenVRMatrixToOpenTKMatrix(matrix));
+
+
+                    err = SteamVR_WebKit.OverlayManager.SetOverlayTransformAbsolute(_handle, ETrackingUniverseOrigin.TrackingUniverseStanding, ref resultMatrix);
+
+                    if (err != EVROverlayError.None)
+                        SteamVR_WebKit.Log("Failed to attach " + Key + " to Overlay " + attachmentKey + " failed: " + err.ToString());
+
+                    _sentAttachmentSuccess = true;
+                }
+                else
+                {
+                    SteamVR_WebKit.Log("Attempted to attach to " + attachmentKey + " but it could not be found.");
+                }
             }
             else
             {
@@ -311,7 +352,7 @@ namespace SteamVR_WebKit
                 if (args[0] is VREvent_t)
                     index = ((VREvent_t)args[0]).trackedDeviceIndex;
                 else
-                    index = (uint)args[0];
+                    index = (uint)(int)args[0];
             } else
             {
                 return;

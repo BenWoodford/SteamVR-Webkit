@@ -56,7 +56,7 @@ namespace SteamVR_WebKit_Test
             videoOverlay.BrowserReady += VideoOverlay_BrowserReady;
             videoOverlay.DashboardOverlay.Width = 3.0f;
             videoOverlay.StartBrowser();
-            videoOverlay.AlphaMask = new Bitmap(Environment.CurrentDirectory + "\\Resources\\alphamap.png");
+            //videoOverlay.AlphaMask = new Bitmap(Environment.CurrentDirectory + "\\Resources\\alphamap.png");
             videoOverlay.UpdateEveryFrame = true;
 
             /*applicationsOverlay = new WebKitOverlay(new Uri("file://" + Environment.CurrentDirectory + "/Resources/applications.html"), 1024, 1024, "webkitTestApps", "WebKit-Apps", OverlayType.Dashboard);
@@ -66,12 +66,12 @@ namespace SteamVR_WebKit_Test
             applicationsOverlay.BrowserReady += ApplicationsOverlay_BrowserReady;
             applicationsOverlay.StartBrowser();*/
 
-            //controllerOverlay = new WebKitOverlay(new Uri("https://www.youtube.com/embed/XOn5ckvIF3U?autoplay=1&start=27"), 550, 250, "controllerTest", "controllerVideo", OverlayType.InGame);
-            //controllerOverlay.InGameOverlay.SetDeviceAttachment(AttachmentType.RightController, new Vector3(0.0f, 0.0f, -0.1f), Quaternion.FromEulerAngles(0.0f, 0.0f, 1.35f));
-            //controllerOverlay.InGameOverlay.Width = .25f;
-            //controllerOverlay.BrowserPreInit += ControllerOverlay_BrowserPreInit;
-            //controllerOverlay.BrowserReady += ControllerOverlay_BrowserReady;
-            //controllerOverlay.StartBrowser(true);
+            controllerOverlay = new WebKitOverlay(new Uri("https://www.youtube.com/embed/XOn5ckvIF3U?autoplay=1&start=27"), 550, 250, "controllerTest", "controllerVideo", OverlayType.InGame);
+            controllerOverlay.InGameOverlay.SetDeviceAttachment(AttachmentType.RightController, new Vector3(0.0f, 0.0f, -0.1f), new Vector3(0.0f, 0.0f, 1.35f));
+            controllerOverlay.InGameOverlay.Width = .25f;
+            controllerOverlay.BrowserPreInit += ControllerOverlay_BrowserPreInit;
+            controllerOverlay.BrowserReady += ControllerOverlay_BrowserReady;
+            controllerOverlay.StartBrowser(true);
 
             //SteamVR_Application application = new SteamVR_Application();
             //application.InstallManifest(true);
