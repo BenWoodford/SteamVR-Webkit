@@ -153,7 +153,7 @@ namespace Valve.VR
         // Keep track of assigned roles.
         private void OnTrackedDeviceRoleChanged(params object[] args)
         {
-            SteamVR_WebKit.SteamVR_WebKit.Log("[OPENVR] Device Role Changed: " + (args.Length > 0 ? args[0] : "Unknown"));
+            //SteamVR_WebKit.SteamVR_WebKit.Log("[OPENVR] Device Role Changed: " + (args.Length > 0 ? args[0] : "Unknown"));
             //SteamVR_WebKit.SteamVR_WebKit.Log("Controller role change detected");
             Refresh();
         }
